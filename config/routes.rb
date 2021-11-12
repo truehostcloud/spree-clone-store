@@ -1,3 +1,3 @@
 Spree::Core::Engine.add_routes do
-  # Add your extension routes here
+  post '/admin/clone_store', controller: 'olitt/clone_store/clone_store', action: 'clone'
 end

@@ -1,17 +1,26 @@
+# require_dependency 'spree/olitt/clone_store/taxonomy_helpers'
+
 module Spree
   module Olitt
     module CloneStore
       class CloneStoreController < Spree::Api::V2::BaseController
-        helper Spree::Olitt::CloneStore::TaxonomyHelpers
+        include Spree::Olitt::CloneStore::TaxonomyHelpers
 
         def clone
           source_id = source_id_param
           raise ActionController::ParameterMissing if source_id.nil?
 
+          # For Testing Only
+          if Spree::Store.exists?(code: store_params[:code])
+            @store = Spree::Store.find_by(code: store_params[:code])
+            clone_taxonmies
+            return
+          end
+
           source_store = Spree::Store.find_by(id: source_id)
           raise ActiveRecord::RecordNotFound if source_store.nil?
 
-          @store = update_store_details, source_store.dup
+          @store = update_store_details source_store.dup
 
           if @store.save
             render_serialized_payload(201) { serialize_resource(@store) }
@@ -31,6 +40,7 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
+          store
         end
 
         def required_store_params
