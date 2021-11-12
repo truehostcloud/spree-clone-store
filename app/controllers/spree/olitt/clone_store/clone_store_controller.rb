@@ -5,17 +5,19 @@ module Spree
     module CloneStore
       class CloneStoreController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::TaxonomyHelpers
+        include Spree::Olitt::CloneStore::TaxonHelpers
+
+        # For Testing Only
+        def test
+          return unless Spree::Store.exists?(code: store_params[:code])
+
+          @store = Spree::Store.find_by(code: store_params[:code])
+          clone_taxonmies(source_id_param, @store.id)
+        end
 
         def clone
           source_id = source_id_param
           raise ActionController::ParameterMissing if source_id.nil?
-
-          # For Testing Only
-          if Spree::Store.exists?(code: store_params[:code])
-            @store = Spree::Store.find_by(code: store_params[:code])
-            clone_taxonmies
-            return
-          end
 
           source_store = Spree::Store.find_by(id: source_id)
           raise ActiveRecord::RecordNotFound if source_store.nil?
