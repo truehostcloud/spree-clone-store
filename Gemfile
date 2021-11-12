@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
-gem 'spree', github: 'spree/spree', branch: 'main'
 gem 'rails-controller-testing'
+gem 'spree', github: 'spree/spree', branch: 'main'
 
 group :development do
   gem 'rcodetools', require: false
