@@ -8,18 +8,13 @@ module Spree
           helper_method :clone_taxons
         end
 
-        def entry(source_taxonomy, _target_taxonomy_id)
-          render json: source_taxonomy.taxons.where(parent: nil)
-        end
-
         def clone_taxons(source_taxonomy_id, target_taxonomy_id)
           taxons = Spree::Taxon.where(taxonomy_id: source_taxonomy_id)
-          cloned_taxons = taxons.map { |taxon| clone_taxon(taxon, target_taxonomy_id) }
-          cloned_taxons.each do |taxon|
-            taxon.save
+          taxons = taxons.map { |taxon| clone_taxon(taxon, target_taxonomy_id) }
+          taxons.each do |taxon|
+            next if taxon.save
 
-            # render_error_payload(taxon.errors)
-            render json: { error: taxon.errors.full_messages.to_sentence, errors: taxon.errors.messages, taxon: taxon }
+            render_error_payload(taxon.errors)
             break
           end
         end

@@ -6,43 +6,36 @@ module Spree
       class CloneStoreController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::TaxonomyHelpers
         include Spree::Olitt::CloneStore::TaxonHelpers
-        include Spree::Olitt::CloneStore::CloneStoreHelpers
 
         # For Testing Only
         def test
-          @old_store = Spree::Store.find_by(id: source_id_param)
-          @new_store = Spree::Store.find_by(id: 6)
-          new_taxonomy = @new_store.taxonomies.find_by(id: 20)
-          handle_clone_taxons(new_taxonomy)
+          return unless Spree::Store.exists?(code: store_params[:code])
+
+          @store = Spree::Store.find_by(code: store_params[:code])
+          clone_taxonmies(source_id_param, @store.id)
         end
 
         def clone
-          return unless handle_clone_store
+          source_id = source_id_param
+          raise ActionController::ParameterMissing if source_id.nil?
 
-          finish
+          source_store = Spree::Store.find_by(id: source_id)
+          raise ActiveRecord::RecordNotFound if source_store.nil?
+
+          @store = update_store_details source_store.dup
+
+          if @store.save
+            render_serialized_payload(201) { serialize_resource(@store) }
+          else
+            render_error_payload(@store.errors)
+          end
         end
 
         private
 
-        attr_accessor :old_store, :new_store
+        attr_accessor :store
 
-        # Store
-        def handle_clone_store
-          @old_store = Spree::Store.find_by(id: source_id_param)
-          raise ActiveRecord::RecordNotFound if @old_store.nil?
-
-          store = clone_and_update_store @old_store.dup
-
-          unless store.save
-            render_error_payload(@store.errors)
-            return false
-          end
-
-          @new_store = store
-          true
-        end
-
-        def clone_and_update_store(store)
+        def update_store_details(store)
           name, url, code, mail_from_address = required_store_params
 
           store.name = name
@@ -63,43 +56,16 @@ module Spree
           [name, url, code, mail_from_address]
         end
 
-        # Taxonomies
-
-        def handle_clone_taxonomies
-          taxonomies = @old_store.taxonomies.all
-          cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
-          save_models(cloned_taxonomies)
-          cloned_taxonomies.each do |taxonomy|
-            break unless handle_clone_taxons(taxonomy)
-          end
+        def store_params
+          params.require(:store).permit(permitted_store_attributes)
         end
 
-        # Taxons
-
-        def handle_clone_taxons(taxonomy)
-          root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
-          cloned_root_taxons = clone_update_taxon(root_taxons, taxonomy)
-          return false unless save_models(cloned_root_taxons)
-
-          true
+        def source_id_param
+          params.require(:source_store_id)
         end
 
-        def clone_update_taxon(root_taxons, taxonomy)
-          taxons = root_taxons.map do |taxon|
-            taxon.taxonomy_id = taxonomy.id
-            taxon
-          end
-          taxons = get_model_hash(taxons)
-          taxons = taxons.map do |taxon|
-            taxon.except('lft', 'rgt', 'depth')
-          end
-          taxonomy.taxons.build(taxons)
-        end
-
-        # finish lifecylec
-
-        def finish
-          render_serialized_payload(201) { serialize_resource(@new_store) }
+        def resource_serializer
+          Spree::Api::V2::Platform::StoreSerializer
         end
       end
     end
