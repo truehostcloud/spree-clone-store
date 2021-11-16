@@ -8,17 +8,15 @@ module Spree
 
         # For Testing Only
         def test
-          # @old_store = Spree::Store.find_by(id: store_id)
+          @old_store = Spree::Store.find_by(id: source_id_param)
           # @new_store = Spree::Store.find_by(id: 6)
           # new_taxonomy = @new_store.taxonomies.find_by(id: 20)
-          # clone_taxons(new_taxonomy)
-          get_old_store
-
+          # handle_clone_taxons(new_taxonomy)
+          clone
         end
 
-        def start_clone
-          get_old_store
-          # clone_taxonomies
+        def clone
+          return unless handle_clone_store
 
           finish
         end
@@ -28,71 +26,66 @@ module Spree
         attr_accessor :old_store, :new_store
 
         # Store
+        def handle_clone_store
+          @old_store = Spree::Store.find_by(id: source_id_param)
+          raise ActiveRecord::RecordNotFound if @old_store.nil?
 
-        def get_old_store
-          @old_store = Spree::Store.find_by(id: store_id)
-          raise ActiveRecord::RecordNotFound if @old_store.url.nil?
-          store = @old_store.dup
-          # unless store.save
-          #   render_error_payload(@store)
-          #   return false
-          # end
+          store = clone_and_update_store @old_store.dup
 
-          @new_store =  store
-          setup_new_store(@new_store)
-          # if @new_store.save
-          #   flash[:success] = flash_message_for(@store, :successfully_created)
-          #   render json: { success: true, data: @new_store }
-          # else
-          #   flash[:error] = "#{Spree.t('store_errors.unable_to_create')}: #{@store.errors.full_messages.join(', ')}"
-          #   render :new
-          # end
+          unless store.save
+            render_error_payload(@store.errors)
+            return false
+          end
+
+          @new_store = store
+          true
         end
 
-        def setup_new_store(store)
+        def clone_and_update_store(store)
           name, url, code, mail_from_address = required_store_params
+
           store.name = name
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
-          store.save
-          render json: { success: true, data: @new_store }
-        end
-
-        def required_store_params
-          name, url, code, mail_from_address = store_params.values_at(:name, :url, :code, :mail_from_address)
-
-          raise ActionController::ParameterMissing, :name if name.nil?
-          raise ActionController::ParameterMissing, :url if url.nil?
-          raise ActionController::ParameterMissing, :code if code.nil?
-          raise ActionController::ParameterMissing, :mail_from_address if mail_from_address.nil?
-
-          [name, url, code, mail_from_address]
+          store
         end
 
         # Taxonomies
 
-        def clone_taxonomies
+        def handle_clone_taxonomies
           taxonomies = @old_store.taxonomies.all
           cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
-          save_models(cloned_taxonomies)
-          # cloned_taxonomies.each do |taxonomy|
-          #   break unless clone_taxons(taxonomy)
-          # end
+          return false unless save_models(cloned_taxonomies)
+
+          true
         end
 
         # Taxons
 
-        def clone_taxons(taxonomy)
-          root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
-          cloned_root_taxons = clone_update_taxon(root_taxons, taxonomy)
-          return false unless save_models(cloned_root_taxons)
-          true
+        def handle_clone_taxons
+          taxonomies = @new_store.taxonomies.all
+          taxonomies.each { |taxonomy| clone_taxon(taxonomy) }
         end
 
-        def clone_update_taxon(root_taxons, taxonomy)
+        def clone_taxon(taxonomy)
+          root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
+          cloned_root_taxons = clone_update_root_taxon(root_taxons, taxonomy)
+          return false unless save_models(cloned_root_taxons)
+
+          root_taxons.each do |root_taxon|
+          end
+
+          all_old_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.order(:id)
+
+          all_old_taxons.each do |_old_parent_taxon|
+            old_child_taxons = taxonomy.taxons
+          end
+        end
+
+        def clone_update_root_taxon(root_taxons, taxonomy)
           taxons = root_taxons.map do |taxon|
-            taxon.taxonomy_id = taxonomy.id
+            taxon.taxonomy = taxonomy
             taxon
           end
           taxons = get_model_hash(taxons)
@@ -102,7 +95,19 @@ module Spree
           taxonomy.taxons.build(taxons)
         end
 
-        # menus
+        def clone_update_child_taxon(child_taxons, taxonomy)
+          taxons = child_taxons.map do |taxon|
+            taxon.taxonomy = taxonomy
+            taxon
+          end
+          taxons = get_model_hash(taxons)
+          taxons = taxons.map do |taxon|
+            taxon.except('lft', 'rgt', 'depth')
+          end
+          taxonomy.taxons.build(taxons)
+        end
+
+        # Menus
 
         def clone_menus
           menus = @old_store.menus.all
@@ -111,7 +116,7 @@ module Spree
           save_models(cloned_menus)
         end
 
-        #  menu items
+        # Menu items
         def clone_menu_items
           menu_items = @old_store.menu_items.all
           raise ActiveRecord::RecordNotFound if menu_items.nil?
@@ -130,7 +135,7 @@ module Spree
           save_models(cloned_products)
         end
 
-        # products variants
+        # Products variants
 
         def clone_variants
           variants = @old_store.variants.all
@@ -139,7 +144,7 @@ module Spree
           save_models(cloned_variants)
         end
 
-        # products option types
+        # Products Option Types
 
         def clone_option_types
           raise ActiveRecord::RecordNotFound if @old_store.option_types.all?
@@ -150,7 +155,7 @@ module Spree
           save_models(cloned_option_types)
         end
 
-        # cms pages
+        # CMS Pages
 
         def clone_cms_page
           cms_page = @old_store.cms_pages.all
@@ -158,7 +163,7 @@ module Spree
           save_models(cloned_cms_pages)
         end
 
-        # cms sections
+        # CMS Sections
 
         def clone_cms_sections
           cms_sections = @old_store.cms_sections.all
@@ -167,7 +172,7 @@ module Spree
         end
 
 
-        # finish lifecycle
+        # Finish lifecycle
 
         def finish
           render_serialized_payload(201) { serialize_resource(@new_store) }
