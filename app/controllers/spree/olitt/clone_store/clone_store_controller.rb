@@ -32,14 +32,14 @@ module Spree
           @old_store = Spree::Store.find_by(id: store_id)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
-          store = clone_and_update_store @old_store.dup
+          # store = clone_and_update_store @old_store.dup
 
           unless store.save
             render_error_payload(@store.errors)
             return false
           end
-          
-          @new_store = store
+
+          # @new_store = store
 
           render json: { success: true, data: store }
 
