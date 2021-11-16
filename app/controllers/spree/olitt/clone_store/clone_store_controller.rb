@@ -38,7 +38,8 @@ module Spree
           #   return false
           # end
           @new_store = store
-          setup_new_store(@new_store)
+          @new_store.save
+          render json: { success: true, data: @new_store }
         end
 
         def setup_new_store(store)
@@ -48,7 +49,7 @@ module Spree
           store.code = code
           store.mail_from_address = mail_from_address
           store.save
-          render json: { success: true, data: store }
+          
         end
 
         def required_store_params
