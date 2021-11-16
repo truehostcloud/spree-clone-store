@@ -1,15 +1,13 @@
-require: rubocop-rails
-
 AllCops:
   DisplayCopNames: true
   TargetRubyVersion: 2.5
   Include:
-    - "**/Gemfile"
-    - "**/Rakefile"
-    - "**/Appraisals"
+    - '**/Gemfile'
+    - '**/Rakefile'
+    - '**/Appraisals'
   Exclude:
-    - "spec/dummy/**/*"
-    - "lib/generators/**/*"
+    - 'spec/dummy/**/*'
+    - 'lib/generators/**/*'
 
 Rails:
   Enabled: true
