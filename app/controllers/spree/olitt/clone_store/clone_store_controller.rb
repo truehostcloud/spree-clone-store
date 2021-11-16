@@ -33,10 +33,10 @@ module Spree
           @old_store = Spree::Store.find_by(id: store_id)
           raise ActiveRecord::RecordNotFound if @old_store.url.nil?
           store = @old_store.dup
-          unless store.save
-            render_error_payload(@store)
-            return false
-          end
+          # unless store.save
+          #   render_error_payload(@store)
+          #   return false
+          # end
           @new_store = store
           setup_new_store(@new_store)
         end
@@ -47,6 +47,7 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
+          store.save
           render json: { success: true, data: store }
         end
 
