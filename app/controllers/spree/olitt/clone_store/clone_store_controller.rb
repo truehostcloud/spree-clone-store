@@ -3,7 +3,7 @@
 module Spree
   module Olitt
     module CloneStore
-      class CloneStoreController < Spree::Api::V2::BaseController
+      class CloneStoreController < Spree::Api::V2::BaseController # rubocop:disable Metrics/ClassLength
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
         # For Testing Only
@@ -16,12 +16,15 @@ module Spree
         end
 
         def clone
-          return unless 
-                    handle_clone_store,
-                    handle_clone_taxonomies,
-                    
+          begin
+            handle_clone_store
+            handle_clone_taxonomies
 
-          finish
+            finish
+          rescue StandardError => e
+             Rails.logger.error(e.message)
+             render :json => e.message
+          end
         end
 
         private
@@ -76,14 +79,15 @@ module Spree
           cloned_root_taxons = clone_update_root_taxon(root_taxons, taxonomy)
           return false unless save_models(cloned_root_taxons)
 
-          root_taxons.each do |root_taxon|
-          end
+          # root_taxons.each do |root_taxon|
+          # end
 
-          all_old_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.order(:id)
+          # all_old_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.order(:id)
 
-          all_old_taxons.each do |_old_parent_taxon|
-            old_child_taxons = taxonomy.taxons
-          end
+          # all_old_taxons.each do |_old_parent_taxon|
+          #   old_child_taxons = taxonomy.taxons
+          #   clone_update_child_taxon(old_child_taxons, _old_parent_taxon)
+          # end
         end
 
         def clone_update_root_taxon(root_taxons, taxonomy)
@@ -115,7 +119,8 @@ module Spree
         def clone_menus
           menus = @old_store.menus.all
           raise ActiveRecord::RecordNotFound if menus.nil?
-          cloned_menus =  @new_store.menus.build(get_model_hash(menus))
+
+          cloned_menus = @new_store.menus.build(get_model_hash(menus))
           save_models(cloned_menus)
         end
 
@@ -123,7 +128,8 @@ module Spree
         def clone_menu_items
           menu_items = @old_store.menu_items.all
           raise ActiveRecord::RecordNotFound if menu_items.nil?
-          cloned_menu_items =  @new_store.menu_items.build(get_model_hash(menu_items))
+
+          cloned_menu_items = @new_store.menu_items.build(get_model_hash(menu_items))
           save_models(cloned_menu_items)
         end
 
@@ -143,6 +149,7 @@ module Spree
         def clone_variants
           variants = @old_store.variants.all
           raise ActiveRecord::RecordNotFound if variants.nil?
+
           cloned_variants = @new_store.products.build(get_model_hash(variants))
           save_models(cloned_variants)
         end
@@ -173,7 +180,6 @@ module Spree
           cloned_cms_section = @new_store.cms_sections.build(get_model_hash(cms_sections))
           save_models(cloned_cms_section)
         end
-
 
         # Finish lifecycle
 
