@@ -8,10 +8,12 @@ module Spree
 
         # For Testing Only
         def test
-          @old_store = Spree::Store.find_by(id: store_id)
-          @new_store = Spree::Store.find_by(id: 6)
-          new_taxonomy = @new_store.taxonomies.find_by(id: 20)
-          handle_clone_taxons(new_taxonomy)
+          # @old_store = Spree::Store.find_by(id: store_id)
+          # @new_store = Spree::Store.find_by(id: 6)
+          # new_taxonomy = @new_store.taxonomies.find_by(id: 20)
+          # clone_taxons(new_taxonomy)
+          get_old_store
+
         end
 
         def clone
@@ -25,7 +27,8 @@ module Spree
         attr_accessor :old_store, :new_store
 
         # Store
-        def handle_clone_store
+
+        def get_old_store
           @old_store = Spree::Store.find_by(id: store_id)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
@@ -35,12 +38,11 @@ module Spree
             render_error_payload(@store.errors)
             return false
           end
-
           @new_store = store
-          true
+          render: 200, json: store
         end
 
-        def clone_and_update_store(store)
+        def setup_new_store(store)
           name, url, code, mail_from_address = required_store_params
 
           store.name = name
@@ -63,22 +65,21 @@ module Spree
 
         # Taxonomies
 
-        def handle_clone_taxonomies
+        def clone_taxonomies
           taxonomies = @old_store.taxonomies.all
           cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
           save_models(cloned_taxonomies)
           cloned_taxonomies.each do |taxonomy|
-            break unless handle_clone_taxons(taxonomy)
+            break unless clone_taxons(taxonomy)
           end
         end
 
         # Taxons
 
-        def handle_clone_taxons(taxonomy)
+        def clone_taxons(taxonomy)
           root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
           cloned_root_taxons = clone_update_taxon(root_taxons, taxonomy)
           return false unless save_models(cloned_root_taxons)
-
           true
         end
 
@@ -94,46 +95,70 @@ module Spree
           taxonomy.taxons.build(taxons)
         end
 
+        # menus
+
+        def clone_menus
+          menus = @old_store.menus.all
+          raise ActiveRecord::RecordNotFound if menus.nil?
+          cloned_menus =  @new_store.menus.build(get_model_hash(menus))
+          save_models(cloned_menus)
+        end
+
+        #  menu items
+        def clone_menu_items
+          menu_items = @old_store.menu_items.all
+          raise ActiveRecord::RecordNotFound if menu_items.nil?
+          cloned_menu_items =  @new_store.menu_items.build(get_model_hash(menu_items))
+          save_models(cloned_menu_items)
+        end
+
         # Product
 
-        def handle_clone_products
+        def clone_products
           clone_option_types
           clone_prototypes
           clone_variants
           products = @old_store.products.all
           cloned_products = @new_store.products.build(get_model_hash(products))
-          return false unless save_models(cloned_products)
+          save_models(cloned_products)
         end
 
-        # variants
+        # products variants
 
         def clone_variants
           variants = @old_store.variants.all
+          raise ActiveRecord::RecordNotFound if variants.nil?
           cloned_variants = @new_store.products.build(get_model_hash(variants))
-          return false unless save_models(cloned_variants)
+          save_models(cloned_variants)
         end
 
-        # optionTypes
+        # products option types
 
         def clone_option_types
+          raise ActiveRecord::RecordNotFound if @old_store.option_types.all?
+
           @option_types = @old_store.option_types.all
-          if @option_types.option_values.empty? do
-             @option_type.option_values.build 
-          else
-             cloned_option_types = @new_store.option_type.option_values.build(get_model_hash(option_types))
-          return false unless save_models(cloned_option_types)
+
+          cloned_option_types = @new_store.option_type.option_values.build(get_model_hash(option_types))
+          save_models(cloned_option_types)
         end
 
-        # protoTypes
+        # cms pages
 
-        def clone_prototypes
-          @prototypes = @old_store.prototypes.all
-          if @prototype.properties.empty? do
-            @prototype.properties.build 
-          else
-          cloned_prototypes = @new_store.prototypes.build(get_model_hash(prototypes))
-          return false unless save_models(cloned_prototypes)
+        def clone_cms_page
+          cms_page = @old_store.cms_pages.all
+          cloned_cms_pages = @new_store.cms_pages.build(get_model_hash(cms_page))
+          save_models(cloned_cms_pages)
         end
+
+        # cms sections
+
+        def clone_cms_sections
+          cms_sections = @old_store.cms_sections.all
+          cloned_cms_section = @new_store.cms_sections.build(get_model_hash(cms_sections))
+          save_models(cloned_cms_section)
+        end
+
 
         # finish lifecycle
 
