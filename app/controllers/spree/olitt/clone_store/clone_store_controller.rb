@@ -40,8 +40,6 @@ module Spree
 
           @new_store =  store
           setup_new_store(@new_store)
-          # save_models(new_store)
-          # render json: { success: true, data: @new_store }
           # if @new_store.save
           #   flash[:success] = flash_message_for(@store, :successfully_created)
           #   render json: { success: true, data: @new_store }
@@ -58,6 +56,7 @@ module Spree
           store.code = code
           store.mail_from_address = mail_from_address
           store.save
+          render json: { success: true, data: @new_store }
         end
 
         def required_store_params
