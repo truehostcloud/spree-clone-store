@@ -17,7 +17,8 @@ module Spree
         end
 
         def start_clone
-          return unless handle_clone_store
+          get_old_store
+          clone_taxonomies
 
           finish
         end
@@ -30,25 +31,18 @@ module Spree
 
         def get_old_store
           @old_store = Spree::Store.find_by(id: store_id)
-          
-          raise ActiveRecord::RecordNotFound if @old_store.empty?
-
+          raise ActiveRecord::RecordNotFound if @old_store.url.nil?
           store = @old_store.dup
-
           unless store.save
             render_error_payload(@store.errors)
             return false
           end
-
-          # @new_store = store
-
-          render json: { success: true, data: @old_store }
-
+          @new_store = store
+          setup_new_store(@new_store)
         end
 
         def setup_new_store(store)
           name, url, code, mail_from_address = required_store_params
-
           store.name = name
           store.url = url
           store.code = code
