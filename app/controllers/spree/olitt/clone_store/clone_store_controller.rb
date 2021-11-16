@@ -38,7 +38,8 @@ module Spree
           #   return false
           # end
 
-          @new_store =  stores_scope.new(permitted_store_params)
+          @new_store =  Spree::Admin::BaseController.stores_scope.new(permitted_store_params)
+          
           if @new_store.save
             flash[:success] = flash_message_for(@store, :successfully_created)
             render json: { success: true, data: @new_store }
