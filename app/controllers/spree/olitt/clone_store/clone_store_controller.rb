@@ -18,7 +18,7 @@ module Spree
 
         def start_clone
           get_old_store
-          clone_taxonomies
+          # clone_taxonomies
 
           finish
         end
@@ -39,8 +39,9 @@ module Spree
           # end
 
           @new_store =  store
-          save_models(new_store)
-          render json: { success: true, data: @new_store }
+          setup_new_store(@new_store)
+          # save_models(new_store)
+          # render json: { success: true, data: @new_store }
           # if @new_store.save
           #   flash[:success] = flash_message_for(@store, :successfully_created)
           #   render json: { success: true, data: @new_store }
@@ -57,7 +58,6 @@ module Spree
           store.code = code
           store.mail_from_address = mail_from_address
           store.save
-          
         end
 
         def required_store_params
@@ -77,9 +77,9 @@ module Spree
           taxonomies = @old_store.taxonomies.all
           cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
           save_models(cloned_taxonomies)
-          cloned_taxonomies.each do |taxonomy|
-            break unless clone_taxons(taxonomy)
-          end
+          # cloned_taxonomies.each do |taxonomy|
+          #   break unless clone_taxons(taxonomy)
+          # end
         end
 
         # Taxons
