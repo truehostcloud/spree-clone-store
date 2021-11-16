@@ -16,7 +16,7 @@ module Spree
 
         end
 
-        def clone
+        def start_clone
           return unless handle_clone_store
 
           finish
@@ -32,7 +32,7 @@ module Spree
           @old_store = Spree::Store.find_by(id: store_id)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
-          # store = clone_and_update_store @old_store.dup
+          store = @old_store.dup
 
           unless store.save
             render_error_payload(@store.errors)
@@ -41,7 +41,7 @@ module Spree
 
           # @new_store = store
 
-          render json: { success: true, data: store }
+          render json: { success: true, data: @old_store }
 
         end
 
