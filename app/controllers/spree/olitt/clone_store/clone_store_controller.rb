@@ -47,7 +47,7 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
-          store
+          render json: { success: true, data: store }
         end
 
         def required_store_params
