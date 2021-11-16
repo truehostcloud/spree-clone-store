@@ -7,7 +7,7 @@ Introduction goes here.
 1. Add this extension to your Gemfile with this line:
 
     ```ruby
-    gem 'spree_olitt'
+    gem 'spree_olitt_clone_store'
     ```
 
 2. Install the gem using Bundler
@@ -19,7 +19,7 @@ Introduction goes here.
 3. Copy & run migrations
 
     ```ruby
-    bundle exec rails g spree_olitt:install
+    bundle exec rails g spree_olitt_clone_store:install
     ```
 
 4. Restart your server

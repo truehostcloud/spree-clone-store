@@ -38,8 +38,11 @@ module Spree
             render_error_payload(@store.errors)
             return false
           end
+          
           @new_store = store
-          render: 200, json: store
+
+          render json: { success: true, data: store }
+
         end
 
         def setup_new_store(store)
