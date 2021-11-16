@@ -30,7 +30,8 @@ module Spree
 
         def get_old_store
           @old_store = Spree::Store.find_by(id: store_id)
-          raise ActiveRecord::RecordNotFound if @old_store.nil?
+          
+          raise ActiveRecord::RecordNotFound if @old_store.empty?
 
           store = @old_store.dup
 
