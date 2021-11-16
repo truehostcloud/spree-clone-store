@@ -37,9 +37,15 @@ module Spree
           #   render_error_payload(@store)
           #   return false
           # end
-          @new_store = store
-          @new_store.save
-          render json: { success: true, data: @new_store }
+
+          @new_store =  stores_scope.new(permitted_store_params)
+          if @new_store.save
+            flash[:success] = flash_message_for(@store, :successfully_created)
+            render json: { success: true, data: @new_store }
+          else
+            flash[:error] = "#{Spree.t('store_errors.unable_to_create')}: #{@store.errors.full_messages.join(', ')}"
+            render :new
+          end
         end
 
         def setup_new_store(store)
