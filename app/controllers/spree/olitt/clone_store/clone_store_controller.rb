@@ -34,7 +34,7 @@ module Spree
           raise ActiveRecord::RecordNotFound if @old_store.url.nil?
           store = @old_store.dup
           unless store.save
-            render_error_payload(@store.errors)
+            render_error_payload(@store)
             return false
           end
           @new_store = store
