@@ -38,9 +38,11 @@ module Spree
 
           store = clone_and_update_store @old_store.dup
 
-          unless store.save
-            render_error_payload(@store.error)
-            return false
+          begin
+             store.save
+          rescue  StandardError => e
+            Rails.logger.error(e.message)
+            render :json => e.message
           end
 
           @new_store = store
