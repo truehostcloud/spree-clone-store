@@ -38,15 +38,16 @@ module Spree
           #   return false
           # end
 
-          @new_store =  Spree::Admin::BaseController.stores_scope.new(permitted_store_params)
-          
-          if @new_store.save
-            flash[:success] = flash_message_for(@store, :successfully_created)
-            render json: { success: true, data: @new_store }
-          else
-            flash[:error] = "#{Spree.t('store_errors.unable_to_create')}: #{@store.errors.full_messages.join(', ')}"
-            render :new
-          end
+          @new_store =  store
+          save_models(new_store)
+          render json: { success: true, data: @new_store }
+          # if @new_store.save
+          #   flash[:success] = flash_message_for(@store, :successfully_created)
+          #   render json: { success: true, data: @new_store }
+          # else
+          #   flash[:error] = "#{Spree.t('store_errors.unable_to_create')}: #{@store.errors.full_messages.join(', ')}"
+          #   render :new
+          # end
         end
 
         def setup_new_store(store)
