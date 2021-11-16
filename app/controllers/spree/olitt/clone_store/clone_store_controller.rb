@@ -4,6 +4,8 @@ module Spree
   module Olitt
     module CloneStore
       class CloneStoreController < Spree::Api::V2::BaseController
+        include Spree::Olitt::CloneStore::TaxonomyHelpers
+        include Spree::Olitt::CloneStore::TaxonHelpers
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
         # For Testing Only
