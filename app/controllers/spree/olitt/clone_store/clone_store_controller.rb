@@ -16,7 +16,10 @@ module Spree
         end
 
         def clone
-          return unless handle_clone_store
+          return unless 
+                    handle_clone_store,
+                    handle_clone_taxonomies,
+                    
 
           finish
         end
