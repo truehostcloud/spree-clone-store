@@ -8,7 +8,7 @@ module Spree
 
         # For Testing Only
         def test
-          @old_store = Spree::Store.find_by(id: store_id)
+          @old_store = Spree::Store.find_by(id: source_id_param)
           @new_store = Spree::Store.find_by(id: 6)
           new_taxonomy = @new_store.taxonomies.find_by(id: 20)
           handle_clone_taxons(new_taxonomy)
@@ -26,7 +26,7 @@ module Spree
 
         # Store
         def handle_clone_store
-          @old_store = Spree::Store.find_by(id: store_id)
+          @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
@@ -94,48 +94,7 @@ module Spree
           taxonomy.taxons.build(taxons)
         end
 
-        # Product
-
-        def handle_clone_products
-          clone_option_types
-          clone_prototypes
-          clone_variants
-          products = @old_store.products.all
-          cloned_products = @new_store.products.build(get_model_hash(products))
-          return false unless save_models(cloned_products)
-        end
-
-        # variants
-
-        def clone_variants
-          variants = @old_store.variants.all
-          cloned_variants = @new_store.products.build(get_model_hash(variants))
-          return false unless save_models(cloned_variants)
-        end
-
-        # optionTypes
-
-        def clone_option_types
-          @option_types = @old_store.option_types.all
-          if @option_types.option_values.empty? do
-             @option_type.option_values.build 
-          else
-             cloned_option_types = @new_store.option_type.option_values.build(get_model_hash(option_types))
-          return false unless save_models(cloned_option_types)
-        end
-
-        # protoTypes
-
-        def clone_prototypes
-          @prototypes = @old_store.prototypes.all
-          if @prototype.properties.empty? do
-            @prototype.properties.build 
-          else
-          cloned_prototypes = @new_store.prototypes.build(get_model_hash(prototypes))
-          return false unless save_models(cloned_prototypes)
-        end
-
-        # finish lifecycle
+        # finish lifecylec
 
         def finish
           render_serialized_payload(201) { serialize_resource(@new_store) }
