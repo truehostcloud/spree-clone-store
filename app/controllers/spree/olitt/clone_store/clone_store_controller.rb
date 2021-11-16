@@ -50,41 +50,41 @@ module Spree
           store
         end
 
-        def required_store_params
-          name, url, code, mail_from_address = store_params.values_at(:name, :url, :code, :mail_from_address)
-
-          raise ActionController::ParameterMissing, :name if name.nil?
-          raise ActionController::ParameterMissing, :url if url.nil?
-          raise ActionController::ParameterMissing, :code if code.nil?
-          raise ActionController::ParameterMissing, :mail_from_address if mail_from_address.nil?
-
-          [name, url, code, mail_from_address]
-        end
-
         # Taxonomies
 
         def handle_clone_taxonomies
           taxonomies = @old_store.taxonomies.all
           cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
-          save_models(cloned_taxonomies)
-          cloned_taxonomies.each do |taxonomy|
-            break unless handle_clone_taxons(taxonomy)
-          end
-        end
-
-        # Taxons
-
-        def handle_clone_taxons(taxonomy)
-          root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
-          cloned_root_taxons = clone_update_taxon(root_taxons, taxonomy)
-          return false unless save_models(cloned_root_taxons)
+          return false unless save_models(cloned_taxonomies)
 
           true
         end
 
-        def clone_update_taxon(root_taxons, taxonomy)
+        # Taxons
+
+        def handle_clone_taxons
+          taxonomies = @new_store.taxonomies.all
+          taxonomies.each { |taxonomy| clone_taxon(taxonomy) }
+        end
+
+        def clone_taxon(taxonomy)
+          root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
+          cloned_root_taxons = clone_update_root_taxon(root_taxons, taxonomy)
+          return false unless save_models(cloned_root_taxons)
+
+          root_taxons.each do |root_taxon|
+          end
+
+          all_old_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.order(:id)
+
+          all_old_taxons.each do |_old_parent_taxon|
+            old_child_taxons = taxonomy.taxons
+          end
+        end
+
+        def clone_update_root_taxon(root_taxons, taxonomy)
           taxons = root_taxons.map do |taxon|
-            taxon.taxonomy_id = taxonomy.id
+            taxon.taxonomy = taxonomy
             taxon
           end
           taxons = get_model_hash(taxons)
@@ -94,7 +94,19 @@ module Spree
           taxonomy.taxons.build(taxons)
         end
 
-        # finish lifecylec
+        def clone_update_child_taxon(child_taxons, taxonomy)
+          taxons = child_taxons.map do |taxon|
+            taxon.taxonomy = taxonomy
+            taxon
+          end
+          taxons = get_model_hash(taxons)
+          taxons = taxons.map do |taxon|
+            taxon.except('lft', 'rgt', 'depth')
+          end
+          taxonomy.taxons.build(taxons)
+        end
+
+        # finish lifecycle
 
         def finish
           render_serialized_payload(201) { serialize_resource(@new_store) }
