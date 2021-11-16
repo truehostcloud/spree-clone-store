@@ -39,7 +39,7 @@ module Spree
           store = clone_and_update_store @old_store.dup
 
           unless store.save
-            render_error_payload(@store.errors)
+            render_error_payload(@store.error)
             return false
           end
 
