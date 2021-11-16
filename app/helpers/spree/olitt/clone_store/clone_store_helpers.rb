@@ -6,8 +6,8 @@ module Spree
           params.require(:store).permit(permitted_store_attributes)
         end
 
-        def source_id_param
-          params.require(:source_store_id)
+        def store_id
+          params.require(:store_id)
         end
 
         def resource_serializer
