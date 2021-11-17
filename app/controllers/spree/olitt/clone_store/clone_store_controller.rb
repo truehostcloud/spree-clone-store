@@ -30,8 +30,8 @@ module Spree
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
-          store.save
           @new_store = store
+          return unless store.save
         end
 
         def clone_and_update_store(store)
@@ -41,6 +41,7 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
+
         end
 
         # Taxonomies
