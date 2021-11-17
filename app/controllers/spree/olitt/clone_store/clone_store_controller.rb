@@ -16,15 +16,13 @@ module Spree
         end
 
         def clone
-          begin
-            handle_clone_store
-            handle_clone_taxonomies
+          handle_clone_store
+          handle_clone_taxonomies
 
-            finish
-          rescue StandardError => e
-             Rails.logger.error(e.message)
-             render :json => e.message
-          end
+          finish
+        rescue StandardError => e
+          Rails.logger.error(e.message)
+          render json: e.message
         end
 
         private
@@ -37,12 +35,10 @@ module Spree
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
-          begin
-             store.save
-          rescue  StandardError => e
-            Rails.logger.error(e.message)
-            render :json => e.message
-          end
+          store.save
+        rescue StandardError => e
+          Rails.logger.error(e.message)
+          render json: e.message
           @new_store = store
           true
         end
