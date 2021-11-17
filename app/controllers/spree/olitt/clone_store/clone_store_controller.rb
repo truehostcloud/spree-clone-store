@@ -5,6 +5,7 @@ module Spree
     module CloneStore
       class CloneStoreController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
+        attr_accessor :old_store, :new_store
 
         # For Testing Only
         def test
@@ -19,10 +20,6 @@ module Spree
 
           finish
         end
-
-        private
-
-        attr_accessor :old_store, :new_store
 
         # Store
         def handle_clone_store
