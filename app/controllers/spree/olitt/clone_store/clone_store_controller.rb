@@ -37,9 +37,8 @@ module Spree
           store.save
         rescue StandardError => e
           Rails.logger.error(e.message)
-          render json: e.message
+          # render json: e.message
           @@new_store = store
-          true
         end
 
         def clone_and_update_store(store)
