@@ -34,9 +34,11 @@ module Spree
 
           store = clone_and_update_store @@old_store.dup
           store.save
+          @@new_store = store
+          puts "Old store at clone stage --> #{@@old_store}"
+          puts "New store at clone stage --> #{@@new_store}"
         rescue StandardError => e
           Rails.logger.error(e.message)
-          @@new_store = store
         end
 
         def clone_and_update_store(store)
@@ -52,6 +54,8 @@ module Spree
         # Taxonomies
 
         def handle_clone_taxonomies
+          puts "Old store at taxonomy stage --> #{@@old_store}"
+          puts "New store at taxonomy stage --> #{@@new_store}"
           taxonomies = @@old_store.taxonomies.all
           cloned_taxonomies = @@new_store.taxonomies.build(get_model_hash(taxonomies))
           save_models(cloned_taxonomies)
