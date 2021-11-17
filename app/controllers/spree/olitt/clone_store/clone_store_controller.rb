@@ -12,8 +12,7 @@ module Spree
 
         # For Testing Only
         def test
-          @old_store = Spree::Store.find_by(id: source_id_param)
-         
+          @@old_store = Spree::Store.find_by(id: source_id_param)
           clone
         end
 
@@ -24,7 +23,7 @@ module Spree
           finish
         rescue StandardError => e
           Rails.logger.error(e.message)
-          render json: e.message
+          # render json: e.message
         end
 
         # Store
@@ -37,8 +36,7 @@ module Spree
           @@new_store = store
           puts "Old store at clone stage --> #{@@old_store}"
           puts "New store at clone stage --> #{@@new_store}"
-        rescue StandardError => e
-          Rails.logger.error(e.message)
+          true
         end
 
         def clone_and_update_store(store)
@@ -49,12 +47,13 @@ module Spree
           store.code = code
           store.mail_from_address = mail_from_address
           store
+          true
         end
 
         # Taxonomies
 
         def handle_clone_taxonomies
-          puts "Old store at taxonomy stage --> #{@@old_store}"
+          Rails.logger.error("Old store at taxonomy stage --> #{@@old_store}") 
           puts "New store at taxonomy stage --> #{@@new_store}"
           taxonomies = @@old_store.taxonomies.all
           cloned_taxonomies = @@new_store.taxonomies.build(get_model_hash(taxonomies))
