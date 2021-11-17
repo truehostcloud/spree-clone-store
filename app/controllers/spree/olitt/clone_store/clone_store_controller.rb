@@ -38,7 +38,7 @@ module Spree
         rescue StandardError => e
           Rails.logger.error(e.message)
           render json: e.message
-          @@new_store = store 
+          @@new_store = store
           true
         end
 
@@ -57,9 +57,7 @@ module Spree
         def handle_clone_taxonomies
           taxonomies = @@old_store.taxonomies.all
           cloned_taxonomies = @@new_store.taxonomies.build(get_model_hash(taxonomies))
-          return false unless save_models(cloned_taxonomies)
-
-          true
+          save_models(cloned_taxonomies)
         end
 
         # Taxons
@@ -72,7 +70,7 @@ module Spree
         def clone_taxon(taxonomy)
           root_taxons = @@old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
           cloned_root_taxons = clone_update_root_taxon(root_taxons, taxonomy)
-          return false unless save_models(cloned_root_taxons)
+          save_models(cloned_root_taxons)
 
           # root_taxons.each do |root_taxon|
           # end
