@@ -18,7 +18,7 @@ module Spree
 
         def clone
           handle_clone_store
-          handle_clone_taxonomies
+          # handle_clone_taxonomies
 
           finish
         rescue StandardError => e
@@ -36,7 +36,6 @@ module Spree
           @@new_store = store
           puts "Old store at clone stage --> #{@@old_store}"
           puts "New store at clone stage --> #{@@new_store}"
-          true
         end
 
         def clone_and_update_store(store)
@@ -46,15 +45,13 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
-          store
-          true
         end
 
         # Taxonomies
 
         def handle_clone_taxonomies
-          Rails.logger.error("Old store at taxonomy stage --> #{@@old_store}") 
-          puts "New store at taxonomy stage --> #{@@new_store}"
+          Rails.logger.error("Old store at taxonomy stage --> #{@@old_store}")
+          Rails.logger.error("New store at taxonomy stage --> #{@@new_store}")
           taxonomies = @@old_store.taxonomies.all
           cloned_taxonomies = @@new_store.taxonomies.build(get_model_hash(taxonomies))
           save_models(cloned_taxonomies)

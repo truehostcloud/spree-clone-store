@@ -14,7 +14,7 @@ module Spree
             if run_migrations
               run 'bundle exec rails db:migrate'
             else
-              puts 'Skipping rails db:migrate, don\'t forget to run it!'
+              Rails.logger.info('Skipping rails db:migrate, don\'t forget to run it!')
             end
           end
         end

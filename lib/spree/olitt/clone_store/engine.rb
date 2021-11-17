@@ -4,14 +4,14 @@ module Spree
       class Engine < Rails::Engine
         require 'spree/core'
         isolate_namespace Spree
-        engine_name 'spree_olitt_clone_store'
+        engine_name 'spree_clone_store'
 
         # use rspec for tests
         config.generators do |g|
           g.test_framework :rspec
         end
 
-        initializer 'spree_olitt_clone_store.environment', before: :load_config_initializers do |_app|
+        initializer 'spree_clone_store.environment', before: :load_config_initializers do |_app|
           Olitt::CloneStore::Config = Olitt::CloneStore::Configuration.new
         end
 
