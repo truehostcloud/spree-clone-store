@@ -21,3 +21,5 @@ public/spree
 .ruby-gemset
 *.gem
 */*.gem
+Dockerfile
+docker-compose.yml
