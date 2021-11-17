@@ -6,19 +6,17 @@ module Spree
       class CloneStoreController < Spree::Api::V2::BaseController # rubocop:disable Metrics/ClassLength
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
-        # class variables
-        @@old_store = nil
-        @@new_store = nil
+        
 
         # For Testing Only
         def test
-          @@old_store = Spree::Store.find_by(id: source_id_param)
+          @old_store = Spree::Store.find_by(id: source_id_param)
           clone
         end
 
         def clone
           handle_clone_store
-          # handle_clone_taxonomies
+          handle_clone_taxonomies
 
           finish
         rescue StandardError => e
@@ -28,12 +26,12 @@ module Spree
 
         # Store
         def handle_clone_store
-          # @@old_store = Spree::Store.find_by(id: source_id_param)
-          raise ActiveRecord::RecordNotFound if @@old_store.nil?
+          @old_store = Spree::Store.find_by(id: source_id_param)
+          raise ActiveRecord::RecordNotFound if @old_store.nil?
 
-          store = clone_and_update_store @@old_store.dup
+          store = clone_and_update_store @old_store.dup
           store.save
-          @@new_store = store
+          @new_store = store
         end
 
         def clone_and_update_store(store)
@@ -48,8 +46,8 @@ module Spree
         # Taxonomies
 
         def handle_clone_taxonomies
-          taxonomies = @@old_store.taxonomies.all
-          cloned_taxonomies = @@new_store.taxonomies.build(get_model_hash(taxonomies))
+          taxonomies = @old_store.taxonomies.all
+          cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
           save_models(cloned_taxonomies)
         end
 
