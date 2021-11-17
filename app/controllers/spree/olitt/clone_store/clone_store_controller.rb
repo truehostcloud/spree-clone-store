@@ -37,14 +37,12 @@ module Spree
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
-
           begin
              store.save
           rescue  StandardError => e
             Rails.logger.error(e.message)
             render :json => e.message
           end
-
           @new_store = store
           true
         end
