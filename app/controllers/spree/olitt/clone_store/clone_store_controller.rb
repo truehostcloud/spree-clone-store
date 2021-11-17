@@ -12,7 +12,7 @@ module Spree
 
         # For Testing Only
         def test
-          @@old_store = Spree::Store.find_by(id: source_id_param)
+          @old_store = Spree::Store.find_by(id: source_id_param)
           clone
         end
 
