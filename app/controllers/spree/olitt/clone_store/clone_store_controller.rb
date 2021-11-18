@@ -29,7 +29,7 @@ module Spree
 
           store = clone_and_update_store @old_store.dup
           @new_store = store
-          return unless store.save
+          store.save!
         end
 
         def clone_and_update_store(store)
