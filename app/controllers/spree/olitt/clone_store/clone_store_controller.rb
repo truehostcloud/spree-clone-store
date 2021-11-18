@@ -11,9 +11,10 @@ module Spree
         def test
           @old_store = Spree::Store.find_by(id: source_id_param)
           @new_store = Spree::Store.find_by(id: 4)
-          return unless handle_clone_pages
+          return unless handle_clone_sections
 
-          render json: @new_store.cms_pages.all
+          render json: @new_store.cms_sections.all
+          # render plain: @old_store.cms_sections.find_by(id: 2).dup.linked_resource_type
         end
 
         def clone
@@ -165,6 +166,8 @@ module Spree
           @new_store.menu_items.joins(:menu).find_by(menu: new_menu, name: old_parent_menu_item.name, parent: new_grandparent_menu_item)
         end
 
+        def get_new_menu_item_linked_resource(resource_type:, resource_id:); end
+
         # Pages
         def handle_clone_pages
           pages = @old_store.cms_pages.all
@@ -172,6 +175,52 @@ module Spree
           return false unless save_models(cloned_pages)
 
           true
+        end
+
+        # Sections
+        def handle_clone_sections
+          old_sections = @old_store.cms_sections.all
+          new_sections = old_sections.map { |section| add_new_page_to_section(old_section: section) }
+          new_sections = new_sections.map { |section| add_linked_resource_to_section(old_section: section) }
+          cloned_sections = build_section_models(sections: new_sections)
+          return false unless save_models(cloned_sections)
+
+          true
+        end
+
+        def add_new_page_to_section(old_section:)
+          new_page = @new_store.cms_pages.find_by(slug: old_section.cms_page.slug)
+          new_section = old_section.dup
+          new_section.cms_page = new_page
+        end
+
+        def add_linked_resource_to_section(old_section:)
+          return old_section unless old_section.methods.include? :linked_resource_type
+
+          new_resource_id = get_new_section_linked_resource(resource_id: old_section.linked_resource_id,
+                                                            resource_type: old_section.linked_resource_type)
+          if new_resource_id.nil?
+            old_section.linked_resource_id = nil
+            old_section.linked_resource_type = nil
+            return old_section
+          end
+
+          old_section.linked_resource_id = new_resource_id
+          old_section
+        end
+
+        def get_new_section_linked_resource(resource_id:, resource_type:)
+          resource = resource_type.constantize
+          old_linked_resource = resource.find_by(id: resource_id)
+
+          return nil unless old_linked_resource.instance_of?('Spree::Taxon'.constantize)
+
+          new_taxon = @new_store.taxons.find_by(permalink: old_linked_resource.permalink)
+          new_taxon.id
+        end
+
+        def build_section_models(sections:)
+          @new_store.cms_sections.build(get_model_hash(sections))
         end
 
         # finish lifecycle
