@@ -23,3 +23,4 @@ public/spree
 */*.gem
 Dockerfile
 docker-compose.yml
+bin/install
