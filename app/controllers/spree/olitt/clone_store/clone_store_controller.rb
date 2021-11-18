@@ -6,8 +6,6 @@ module Spree
       class CloneStoreController < Spree::Api::V2::BaseController # rubocop:disable Metrics/ClassLength
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
-        
-
         # For Testing Only
         def test
           @old_store = Spree::Store.find_by(id: source_id_param)
@@ -16,7 +14,7 @@ module Spree
 
         def clone
           handle_clone_store
-          handle_clone_taxonomies
+          clone_menus
 
           finish
         rescue StandardError => e
@@ -41,7 +39,6 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
-
         end
 
         # Taxonomies
