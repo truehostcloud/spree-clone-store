@@ -11,15 +11,9 @@ module Spree
         def test
           @old_store = Spree::Store.find_by(id: source_id_param)
           @new_store = Spree::Store.find_by(id: 4)
-          return unless handle_clone_menu_items
+          return unless handle_clone_pages
 
-          render json: @new_store.menu_items.all
-          # old_menu = @new_store.menus.find_by(id: 13)
-          # parent_menu_item = @old_store.menu_items.find_by(id: 1)
-          # render json: @new_store.menu_items.joins(:menu).find_by(menu: old_menu, name: parent_menu_item.name)
-          # render json: parent_menu_item.parent
-          # render json: @old_store.menu_items.where(parent: parent_menu_item, menu: parent_menu_item.menu)
-          #                        .order(depth: :asc).order(id: :asc)
+          render json: @new_store.cms_pages.all
         end
 
         def clone
@@ -169,6 +163,15 @@ module Spree
           end
 
           @new_store.menu_items.joins(:menu).find_by(menu: new_menu, name: old_parent_menu_item.name, parent: new_grandparent_menu_item)
+        end
+
+        # Pages
+        def handle_clone_pages
+          pages = @old_store.cms_pages.all
+          cloned_pages = @new_store.cms_pages.build(get_model_hash(pages))
+          return false unless save_models(cloned_pages)
+
+          true
         end
 
         # finish lifecycle
