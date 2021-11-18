@@ -11,8 +11,8 @@ module Spree
         def test
           @old_store = Spree::Store.find_by(id: source_id_param)
           @new_store = Spree::Store.find_by(id: 6)
-          new_taxonomy = @new_store.taxonomies.find_by(id: 20)
-          handle_clone_taxons(new_taxonomy)
+          handle_clone_taxons
+          render json: @new_store.taxons.all
         end
 
         def clone
@@ -60,47 +60,35 @@ module Spree
         # Taxons
 
         def handle_clone_taxons
-          taxonomies = @new_store.taxonomies.all
-          taxonomies.each { |taxonomy| clone_taxon(taxonomy) }
+          old_root_taxons = @old_store.taxons.where(parent: nil)
+          old_root_taxons.each { |root_taxon| clone_taxon(root_taxon) }
         end
 
-        def clone_taxon(taxonomy)
-          root_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.where(parent: nil)
-          cloned_root_taxons = clone_update_root_taxon(root_taxons, taxonomy)
-          return false unless save_models(cloned_root_taxons)
+        def clone_taxon(parent_taxon)
+          old_taxons = @old_store.taxons.where(parent: parent_taxon, taxonomy: parent_taxon.taxonomy)
+          return if old_taxons.nil?
 
-          root_taxons.each do |root_taxon|
-          end
+          new_taxonomy = @new_store.taxonomies.find_by(name: parent_taxon.taxonomy.name)
+          cloned_taxons = clone_update_taxon(old_taxons, new_taxonomy, get_new_root_taxon(new_taxonomy, parent_taxon))
+          return false unless save_models(cloned_taxons)
 
-          all_old_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.order(:id)
-
-          all_old_taxons.each do |_old_parent_taxon|
-            old_child_taxons = taxonomy.taxons
-          end
+          old_taxons.each { |taxon| clone_taxon(taxon) }
         end
 
-        def clone_update_root_taxon(root_taxons, taxonomy)
-          taxons = root_taxons.map do |taxon|
-            taxon.taxonomy = taxonomy
-            taxon
+        def clone_update_taxon(old_taxons, new_taxonomy, new_parent_taxon)
+          taxons = old_taxons.map do |taxon|
+            new_taxon = taxon.dup
+            new_taxon.parent = new_parent_taxon
+            new_taxon
           end
-          taxons = get_model_hash(taxons)
-          taxons = taxons.map do |taxon|
+          taxons = get_model_hash(taxons).map do |taxon|
             taxon.except('lft', 'rgt', 'depth')
           end
-          taxonomy.taxons.build(taxons)
+          new_taxonomy.taxons.build(taxons)
         end
 
-        def clone_update_child_taxon(child_taxons, taxonomy)
-          taxons = child_taxons.map do |taxon|
-            taxon.taxonomy = taxonomy
-            taxon
-          end
-          taxons = get_model_hash(taxons)
-          taxons = taxons.map do |taxon|
-            taxon.except('lft', 'rgt', 'depth')
-          end
-          taxonomy.taxons.build(taxons)
+        def get_new_root_taxon(new_taxonomy, old_parent_taxon)
+          @new_store.taxons.find_by(permalink: old_parent_taxon.permalink, taxonomy: new_taxonomy)
         end
 
         # finish lifecycle
