@@ -67,7 +67,7 @@ module Spree
         # Taxons
 
         def handle_clone_taxons
-          old_root_taxons = @old_store.taxons.where(parent: nil)
+          old_root_taxons = @old_store.taxons.where(parent: nil).order(depth: :asc).order(id: :asc)
           old_root_taxons.each { |root_taxon| return false unless clone_taxon(root_taxon, terminate: false) }
           true
         end
@@ -76,6 +76,7 @@ module Spree
           return false if terminate
 
           old_taxons = @old_store.taxons.where(parent: parent_taxon, taxonomy: parent_taxon.taxonomy)
+                                 .order(depth: :asc).order(id: :asc)
           return false if old_taxons.nil?
 
           new_taxonomy = @new_store.taxonomies.find_by(name: parent_taxon.taxonomy.name)
