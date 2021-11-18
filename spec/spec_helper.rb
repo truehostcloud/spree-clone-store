@@ -8,6 +8,7 @@ rescue LoadError
 end
 
 require 'spree_dev_tools/rspec/spec_helper'
+require 'spree_sample'
 
 # Requires supporting ruby files with custom matchers and macros, etc,
 # in spec/support/ and its subdirectories.
