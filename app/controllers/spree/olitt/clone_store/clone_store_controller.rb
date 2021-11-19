@@ -19,10 +19,10 @@ module Spree
 
         def clone
           handle_clone_store
-          handle_clone_taxonomies
-          handle_clone_taxons
+          # handle_clone_taxonomies
+          # handle_clone_taxons
 
-          finish
+          # finish
         end
 
         # Store
