@@ -10,8 +10,8 @@ module Spree
         # For Testing Only
         def test
           @old_store = Spree::Store.find_by(id: source_id_param)
-          @new_store = Spree::Store.find_by(id: 4)
-          return unless handle_clone_sections
+          # @new_store = Spree::Store.find_by(id: 4)
+          return unless clone
 
           render json: @new_store.cms_sections.all
           # render plain: @old_store.cms_sections.find_by(id: 2).dup.linked_resource_type
