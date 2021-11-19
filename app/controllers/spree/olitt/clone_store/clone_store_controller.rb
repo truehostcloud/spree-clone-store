@@ -21,6 +21,7 @@ module Spree
           handle_clone_store
           handle_clone_taxonomies
           handle_clone_taxons
+          clone_products
 
           finish
         end
@@ -101,6 +102,42 @@ module Spree
         def get_new_parent_taxon(new_taxonomy, old_parent_taxon)
           @new_store.taxons.find_by(permalink: old_parent_taxon.permalink, taxonomy: new_taxonomy)
         end
+
+        # Product
+        def clone_products
+          clone_option_types
+          # clone_prototypes
+          clone_variants
+          products = @old_store.products.all
+          cloned_products = @new_store.products.build(get_model_hash(products))
+          return false unless save_models(cloned_products)
+
+          true
+        end
+
+        # Products variants
+        def clone_variants
+          variants = @old_store.variants.all
+          raise ActiveRecord::RecordNotFound if variants.nil?
+
+          cloned_variants = @new_store.products.build(get_model_hash(variants))
+          return false unless save_models(cloned_variants)
+
+          true
+        end
+
+        # Products Option Types
+        def clone_option_types
+          raise ActiveRecord::RecordNotFound if @old_store.option_types.all?
+
+          @option_types = @old_store.option_types.all
+
+          cloned_option_types = @new_store.option_type.option_values.build(get_model_hash(@option_types))
+          return false unless save_models(cloned_option_types)
+
+          true
+        end
+
 
         # Menus
         def handle_clone_menus
