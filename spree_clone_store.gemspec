@@ -5,7 +5,7 @@ require 'spree/olitt/clone_store/version'
 
 Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
-  s.name        = 'spree_olitt_clone_store'
+  s.name        = 'spree_clone_store'
   s.version     = Spree::Olitt::CloneStore::VERSION
   s.summary     = 'Clones a store for a customer'
   s.description = s.summary
