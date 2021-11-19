@@ -105,9 +105,9 @@ module Spree
 
         # Product
         def clone_products
-          clone_option_types
+          # clone_option_types
           # clone_prototypes
-          clone_variants
+          # clone_variants
           products = @old_store.products.all
           cloned_products = @new_store.products.build(get_model_hash(products))
           return false unless save_models(cloned_products)
