@@ -13,16 +13,16 @@ module Spree
           # @new_store = Spree::Store.find_by(id: 4)
           return unless clone
 
-          render json: @new_store.cms_sections.all
+          # render json: @new_store.cms_sections.all
           # render plain: @old_store.cms_sections.find_by(id: 2).dup.linked_resource_type
         end
 
         def clone
           handle_clone_store
-          # handle_clone_taxonomies
-          # handle_clone_taxons
+          handle_clone_taxonomies
+          handle_clone_taxons
 
-          # finish
+          finish
         end
 
         # Store
