@@ -194,8 +194,7 @@ module Spree
         end
 
         def add_linked_resource_to_section(old_section:)
-          return old_section unless old_section.methods.include? :linked_resource_type
-          return old_section if old_section.linked_resource_type.nil?
+          return old_section unless old_section.methods.include? :linked_resource_type and !old_section.linked_resource_type.nil?
 
           new_resource_id = get_new_section_linked_resource(resource_id: old_section.linked_resource_id,
                                                             resource_type: old_section.linked_resource_type)
