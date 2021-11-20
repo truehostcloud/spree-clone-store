@@ -14,7 +14,6 @@ module Spree
           return unless handle_clone_sections
 
           render json: @new_store.cms_sections.all
-          # render plain: @old_store.cms_sections.find_by(id: 2).dup.linked_resource_type
         end
 
         def clone
@@ -182,8 +181,7 @@ module Spree
           old_sections = @old_store.cms_sections.all
           new_sections = old_sections.map { |section| add_new_page_to_section(old_section: section) }
           new_sections = new_sections.map { |section| add_linked_resource_to_section(old_section: section) }
-          cloned_sections = build_section_models(sections: new_sections)
-          return false unless save_models(cloned_sections)
+          return false unless save_models(new_sections)
 
           true
         end
@@ -192,10 +190,12 @@ module Spree
           new_page = @new_store.cms_pages.find_by(slug: old_section.cms_page.slug)
           new_section = old_section.dup
           new_section.cms_page = new_page
+          new_section
         end
 
         def add_linked_resource_to_section(old_section:)
           return old_section unless old_section.methods.include? :linked_resource_type
+          return old_section if old_section.linked_resource_type.nil?
 
           new_resource_id = get_new_section_linked_resource(resource_id: old_section.linked_resource_id,
                                                             resource_type: old_section.linked_resource_type)
@@ -217,10 +217,6 @@ module Spree
 
           new_taxon = @new_store.taxons.find_by(permalink: old_linked_resource.permalink)
           new_taxon.id
-        end
-
-        def build_section_models(sections:)
-          @new_store.cms_sections.build(get_model_hash(sections))
         end
 
         # finish lifecycle
