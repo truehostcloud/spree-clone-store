@@ -5,16 +5,16 @@ module Spree
     module CloneStore
       class CloneStoreController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
+        include Spree::Olitt::CloneStore::ProductHelpers
         attr_accessor :old_store, :new_store
 
         # For Testing Only
         def test
           @old_store = Spree::Store.find_by(id: source_id_param)
-          # @new_store = Spree::Store.find_by(id: 4)
-          return unless clone
+          @new_store = Spree::Store.find_by(id: 4)
 
-          # render json: @new_store.cms_sections.all
-          # render plain: @old_store.cms_sections.find_by(id: 2).dup.linked_resource_type
+          handle_clone_products
+          render json: @new_store.products.all
         end
 
         def clone
@@ -103,42 +103,7 @@ module Spree
           @new_store.taxons.find_by(permalink: old_parent_taxon.permalink, taxonomy: new_taxonomy)
         end
 
-        # Product
-        def clone_products
-          # clone_option_types
-          # clone_prototypes
-          # clone_variants
-          products = @old_store.products.all
-          cloned_products = @new_store.products.build(get_model_hash(products))
-          return false unless save_models(cloned_products)
-
-          true
-        end
-
-        # Products variants
-        def clone_variants
-          variants = @old_store.variants.all
-          raise ActiveRecord::RecordNotFound if variants.nil?
-
-          cloned_variants = @new_store.products.build(get_model_hash(variants))
-          return false unless save_models(cloned_variants)
-
-          true
-        end
-
-        # Products Option Types
-        def clone_option_types
-          raise ActiveRecord::RecordNotFound if @old_store.option_types.all?
-
-          @option_types = @old_store.option_types.all
-
-          cloned_option_types = @new_store.option_type.option_values.build(get_model_hash(@option_types))
-          return false unless save_models(cloned_option_types)
-
-          true
-        end
-
-
+        
         # Menus
         def handle_clone_menus
           menus = @old_store.menus.all
@@ -205,7 +170,18 @@ module Spree
           @new_store.menu_items.joins(:menu).find_by(menu: new_menu, name: old_parent_menu_item.name, parent: new_grandparent_menu_item)
         end
 
-        def get_new_menu_item_linked_resource(resource_type:, resource_id:); end
+        def get_new_menu_item_linked_resource(resource_type:, resource_id:)
+          resource = resource_type.constantize
+          old_linked_resource = resource.find_by(id: resource_id)
+
+          return get_new_linked_taxon(old_taxon: old_linked_resource) if old_linked_resource.instance_of?('Spree::Taxon'.constantize)
+
+          return get_new_linked_product(old_product: old_linked_resource) if old_linked_resource.instance_of?('Spree::Product'.constantize)
+
+          return get_new_linked_page(old_page: old_linked_resource) if old_linked_resource.instance_of?('Spree::CmsPage'.constantize)
+
+          nil
+        end
 
         # Pages
         def handle_clone_pages
@@ -221,8 +197,7 @@ module Spree
           old_sections = @old_store.cms_sections.all
           new_sections = old_sections.map { |section| add_new_page_to_section(old_section: section) }
           new_sections = new_sections.map { |section| add_linked_resource_to_section(old_section: section) }
-          cloned_sections = build_section_models(sections: new_sections)
-          return false unless save_models(cloned_sections)
+          return false unless save_models(new_sections)
 
           true
         end
@@ -231,18 +206,17 @@ module Spree
           new_page = @new_store.cms_pages.find_by(slug: old_section.cms_page.slug)
           new_section = old_section.dup
           new_section.cms_page = new_page
+          new_section
         end
 
         def add_linked_resource_to_section(old_section:)
           return old_section unless old_section.methods.include? :linked_resource_type
+          return old_section if old_section.linked_resource_type.nil?
 
           new_resource_id = get_new_section_linked_resource(resource_id: old_section.linked_resource_id,
                                                             resource_type: old_section.linked_resource_type)
-          if new_resource_id.nil?
-            old_section.linked_resource_id = nil
-            old_section.linked_resource_type = nil
-            return old_section
-          end
+
+          return reset_section_resource(section: old_section) if new_resource_id.nil?
 
           old_section.linked_resource_id = new_resource_id
           old_section
@@ -252,17 +226,68 @@ module Spree
           resource = resource_type.constantize
           old_linked_resource = resource.find_by(id: resource_id)
 
-          return nil unless old_linked_resource.instance_of?('Spree::Taxon'.constantize)
+          return get_new_linked_taxon(old_taxon: old_linked_resource) if old_linked_resource.instance_of?('Spree::Taxon'.constantize)
 
-          new_taxon = @new_store.taxons.find_by(permalink: old_linked_resource.permalink)
-          new_taxon.id
+          return get_new_linked_product(old_product: old_linked_resource) if old_linked_resource.instance_of?('Spree::Product'.constantize)
+
+          nil
         end
 
-        def build_section_models(sections:)
-          @new_store.cms_sections.build(get_model_hash(sections))
+        def reset_section_resource(section:)
+          section.linked_resource_id = nil
+          section.linked_resource_type = nil
+          section
         end
 
-        # finish lifecycle
+        # Products
+        def handle_clone_products
+          old_products = @old_store.products.all
+          new_products = old_products.map { |product| clone_product(old_product: product) }
+
+          return false unless save_models(new_products)
+
+          true
+        end
+
+        def clone_product(old_product:)
+          old_product.dup.tap do |new_product|
+            new_product.taxons = old_product.taxons.all.map { |old_taxon| @new_store.taxons.find_by(permalink: old_taxon.permalink) }
+            new_product.stores = [@new_store]
+            new_product.created_at = nil
+            new_product.deleted_at = nil
+            new_product.updated_at = nil
+            new_product.product_properties = reset_properties(product: old_product)
+            new_product.master = duplicate_master_variant(product: old_product)
+            new_product.variants = old_product.variants.map { |variant| duplicate_variant(variant: variant) }
+          end
+        end
+
+        # Linked Resources
+        def get_new_linked_taxon(old_taxon:)
+          if old_taxon.instance_of?('Spree::Taxon'.constantize)
+            new_taxon = @new_store.taxons.find_by(permalink: old_taxon.permalink)
+            return new_taxon.id
+          end
+          nil
+        end
+
+        def get_new_linked_product(old_product:)
+          if old_product.instance_of?('Spree::Product'.constantize)
+            new_product = @new_store.products.find_by(slug: old_product.slug)
+            return new_product.id
+          end
+          nil
+        end
+
+        def get_new_linked_page(old_page:)
+          if old_page.instance_of?('Spree::CmsPage'.constantize)
+            new_page = @new_store.cms_pages.find_by(slug: old_page.slug)
+            return new_page.id
+          end
+          nil
+        end
+
+        # Finish Lifecycle
 
         def finish
           render_serialized_payload(201) { serialize_resource(@new_store) }
