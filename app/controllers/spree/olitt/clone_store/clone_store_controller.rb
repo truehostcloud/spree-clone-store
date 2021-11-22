@@ -48,7 +48,7 @@ module Spree
         # Taxonomies
 
         def handle_clone_taxonomies
-          taxonomies = @old_store.taxonomies.all
+          taxonomies = @old_store.taxonomies
           cloned_taxonomies = @new_store.taxonomies.build(get_model_hash(taxonomies))
           return false unless save_models(cloned_taxonomies)
 
@@ -98,7 +98,7 @@ module Spree
 
         # Menus
         def handle_clone_menus
-          menus = @old_store.menus.all
+          menus = @old_store.menus
           cloned_menus = @new_store.menus.build(get_model_hash(menus))
           return false unless save_models(cloned_menus)
 
@@ -177,7 +177,7 @@ module Spree
 
         # Pages
         def handle_clone_pages
-          pages = @old_store.cms_pages.all
+          pages = @old_store.cms_pages
           cloned_pages = @new_store.cms_pages.build(get_model_hash(pages))
           return false unless save_models(cloned_pages)
 
@@ -186,7 +186,7 @@ module Spree
 
         # Sections
         def handle_clone_sections
-          old_sections = @old_store.cms_sections.all
+          old_sections = @old_store.cms_sections
           new_sections = old_sections.map { |section| add_new_page_to_section(old_section: section) }
           new_sections = new_sections.map { |section| add_linked_resource_to_section(old_section: section) }
           return false unless save_models(new_sections)
@@ -233,7 +233,7 @@ module Spree
 
         # Products
         def handle_clone_products
-          old_products = @old_store.products.all
+          old_products = @old_store.products
           new_products = old_products.map { |product| clone_product(old_product: product) }
 
           return false unless save_models(new_products)
@@ -243,7 +243,7 @@ module Spree
 
         def clone_product(old_product:)
           old_product.dup.tap do |new_product|
-            new_product.taxons = old_product.taxons.all.map { |old_taxon| @new_store.taxons.find_by(permalink: old_taxon.permalink) }
+            new_product.taxons = old_product.taxons.map { |old_taxon| @new_store.taxons.find_by(permalink: old_taxon.permalink) }
             new_product.stores = [@new_store]
             new_product.created_at = nil
             new_product.deleted_at = nil
