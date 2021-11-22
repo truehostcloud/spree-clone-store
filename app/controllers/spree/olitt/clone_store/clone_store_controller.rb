@@ -1,9 +1,7 @@
-# require_dependency 'spree/olitt/clone_store/taxonomy_helpers'
-
 module Spree
   module Olitt
     module CloneStore
-      class CloneStoreController < Spree::Api::V2::BaseController # rubocop:disable Metrics/ClassLength
+      class CloneStoreController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
         include Spree::Olitt::CloneStore::ProductHelpers
         attr_accessor :old_store, :new_store
@@ -19,9 +17,6 @@ module Spree
           return unless handle_clone_products
 
           finish
-        rescue StandardError => e
-          Rails.logger.error(e.message)
-          # render json: e.message
         end
 
         # Store
@@ -30,8 +25,14 @@ module Spree
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
+
+          unless store.save
+            render_error_payload(@store.errors)
+            return false
+          end
+
           @new_store = store
-          store.save!
+          true
         end
 
         def clone_and_update_store(store)
@@ -190,15 +191,7 @@ module Spree
           new_sections = new_sections.map { |section| add_linked_resource_to_section(old_section: section) }
           return false unless save_models(new_sections)
 
-          # root_taxons.each do |root_taxon|
-          # end
-
-          # all_old_taxons = @old_store.taxonomies.find_by(name: taxonomy.name).taxons.order(:id)
-
-          # all_old_taxons.each do |_old_parent_taxon|
-          #   old_child_taxons = taxonomy.taxons
-          #   clone_update_child_taxon(old_child_taxons, _old_parent_taxon)
-          # end
+          true
         end
 
         def add_new_page_to_section(old_section:)
