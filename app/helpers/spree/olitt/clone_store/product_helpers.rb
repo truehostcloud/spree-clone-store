@@ -7,7 +7,7 @@ module Spree
           master.dup.tap do |new_master|
             new_master.sku = sku_generator(sku: master.sku)
             new_master.deleted_at = nil
-            new_master.images = master.images.map { |image| duplicate_image image }
+            new_master.images = master.images.map { |image| duplicate_image(image: image) }
             new_master.price = master.price
             new_master.currency = master.currency
           end
