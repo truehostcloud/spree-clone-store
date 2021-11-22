@@ -8,20 +8,15 @@ module Spree
         include Spree::Olitt::CloneStore::ProductHelpers
         attr_accessor :old_store, :new_store
 
-        # For Testing Only
-        def test
-          @old_store = Spree::Store.find_by(id: source_id_param)
-          @new_store = Spree::Store.find_by(id: 4)
-
-          handle_clone_products
-          render json: @new_store.products.all
-        end
-
         def clone
-          handle_clone_store
-          handle_clone_taxonomies
-          handle_clone_taxons
-          clone_products
+          return unless handle_clone_store
+          return unless handle_clone_taxonomies
+          return unless handle_clone_taxons
+          return unless handle_clone_menus
+          return unless handle_clone_menu_items
+          return unless handle_clone_pages
+          return unless handle_clone_sections
+          return unless handle_clone_products
 
           finish
         end
