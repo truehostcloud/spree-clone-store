@@ -23,20 +23,20 @@ module Spree
                                    .find_by(id: source_id_param)
           @new_store = Spree::Store.find_by(id: 4)
 
-          return unless Spree::Olitt::CloneStore::Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                                                        new_store: @new_store)
-          return unless Spree::Olitt::CloneStore::Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                                                    new_store: @new_store)
-          return unless Spree::Olitt::CloneStore::Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                                                   new_store: @new_store)
-          return unless Spree::Olitt::CloneStore::Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-                                                                                       new_store: @new_store)
-          return unless Spree::Olitt::CloneStore::Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                                                    new_store: @new_store)
-          return unless Spree::Olitt::CloneStore::Duplicators::PagesDuplicator.new(old_store: @old_store,
-                                                                                   new_store: @new_store)
-          return unless Spree::Olitt::CloneStore::Duplicators::SectionsDuplicator.new(old_store: @old_store,
-                                                                                      new_store: @new_store)
+          return unless Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+                                                              new_store: @new_store)
+          return unless Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                                          new_store: @new_store)
+          return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
+                                                         new_store: @new_store)
+          return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+                                                             new_store: @new_store)
+          return unless Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                                          new_store: @new_store)
+          return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
+                                                         new_store: @new_store)
+          return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
+                                                            new_store: @new_store)
 
           finish
         end
