@@ -16,17 +16,12 @@ module Spree
         attr_accessor :old_store, :new_store
 
         def clone
-          # return unless handle_clone_store
+          return unless handle_clone_store
 
-          @old_store = Spree::Store.includes(:taxonomies, :taxons, :menus, :menu_items, :cms_pages, :cms_sections,
-                                             products: %i[variants taxons product_properties master])
-                                   .find_by(id: source_id_param)
-          @new_store = Spree::Store.find_by(id: 4)
-
-          return unless Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                              new_store: @new_store).handle_clone_taxonomies
-          return unless Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                          new_store: @new_store).handle_clone_taxons
+          return unless  Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+                                                               new_store: @new_store).handle_clone_taxonomies
+          return unless  Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                                           new_store: @new_store).handle_clone_taxons
           return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
                                                          new_store: @new_store).handle_clone_menus
           return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
@@ -41,11 +36,27 @@ module Spree
           finish
         end
 
+        def test
+          @old_store = Spree::Store.includes(:taxonomies, :menus, :menu_items, :cms_pages, :cms_sections,
+                                             taxons: [:taxonomy], products: %i[variants taxons product_properties master])
+                                   .find_by(id: source_id_param)
+          @new_store = Spree::Store.find_by(id: 6)
+
+          ActiveRecord::Base.transaction do
+            Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+                                                  new_store: @new_store).handle_clone_taxonomies
+            Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                              new_store: @new_store).handle_clone_taxons
+            raise ActiveRecord::Rollback
+          end
+        end
+
         # Store
         def handle_clone_store
-          @old_store = Spree::Store.includes(:taxonomies, :taxons, :menus, :menu_items, :cms_pages, :cms_sections,
-                                             products: %i[variants taxons product_properties master])
-                                   .find_by(id: source_id_param)
+          @old_store = Spree::Store
+                       .includes(:taxonomies, :menus, :menu_items, :cms_pages, :cms_sections,
+                                 taxons: [:taxonomy], products: %i[variants taxons product_properties master])
+                       .find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
