@@ -8,6 +8,7 @@ module Spree
           def initialize(old_store:, new_store:)
             @old_store = old_store
             @new_store = Spree::Store.includes(:taxonomies).find_by(id: new_store.id)
+            @linked_resource = LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
           end
 
           def handle_clone_sections
@@ -43,9 +44,13 @@ module Spree
             resource = resource_type.constantize
             old_linked_resource = resource.find_by(id: resource_id)
 
-            return get_new_linked_taxon(old_taxon: old_linked_resource) if old_linked_resource.instance_of?('Spree::Taxon'.constantize)
+            if old_linked_resource.instance_of?('Spree::Taxon'.constantize)
+              return @linked_resource.get_new_linked_taxon(old_taxon: old_linked_resource)
+            end
 
-            return get_new_linked_product(old_product: old_linked_resource) if old_linked_resource.instance_of?('Spree::Product'.constantize)
+            if old_linked_resource.instance_of?('Spree::Product'.constantize)
+              return @linked_resource.get_new_linked_product(old_product: old_linked_resource)
+            end
 
             nil
           end
