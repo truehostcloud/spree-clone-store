@@ -65,6 +65,7 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
+          store.default = false
           store
         end
 
