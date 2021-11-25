@@ -9,11 +9,11 @@ module Spree
         def clone
           return unless handle_clone_store
           return unless handle_clone_taxonomies
-          return unless handle_clone_taxons
+          # return unless handle_clone_taxons
           return unless handle_clone_menus
-          return unless handle_clone_menu_items
+          # return unless handle_clone_menu_items
           return unless handle_clone_pages
-          return unless handle_clone_sections
+          # return unless handle_clone_sections
           return unless handle_clone_products
 
           finish
