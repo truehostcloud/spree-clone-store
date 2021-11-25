@@ -18,6 +18,14 @@ module Spree
           render json: old_taxons
         end
 
+        def products
+          old_products = get_store.products
+
+          destroy(models: old_products)
+
+          render json: old_products
+        end
+
         private
 
         def get_store
