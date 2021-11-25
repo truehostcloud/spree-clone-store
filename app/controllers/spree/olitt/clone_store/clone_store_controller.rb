@@ -9,10 +9,10 @@ module Spree
         def clone
           return unless handle_clone_store
           return unless handle_clone_taxonomies
-          # return unless handle_clone_taxons
+          return unless handle_clone_taxons
           return unless handle_clone_menus
           # return unless handle_clone_menu_items
-          return unless handle_clone_pages
+          # return unless handle_clone_pages
           # return unless handle_clone_sections
           return unless handle_clone_products
 
@@ -234,8 +234,7 @@ module Spree
         # Products
         def handle_clone_products
           old_products = @old_store.products.all
-          new_products = @new_store.products.build(get_model_hash(old_products))
-          # new_products = old_products.map { |product| clone_product(old_product: product) }
+          new_products = old_products.map { |product| clone_product(old_product: product) }
 
           return false unless save_models(new_products)
 
