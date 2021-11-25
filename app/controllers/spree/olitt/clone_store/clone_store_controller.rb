@@ -41,19 +41,22 @@ module Spree
             handle_clone_store
             Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
                                                   new_store: @new_store).handle_clone_taxonomies
-            Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                              new_store: @new_store).handle_clone_taxons
-            Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                             new_store: @new_store).handle_clone_menus
-            Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-                                                 new_store: @new_store).handle_clone_menu_items
-            Duplicators::PagesDuplicator.new(old_store: @old_store,
-                                             new_store: @new_store).handle_clone_pages
-            Duplicators::SectionsDuplicator.new(old_store: @old_store,
-                                                new_store: @new_store).handle_clone_sections
-            product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
-                                                                     new_store: @new_store)
-            render json: product_duplicator.errors unless product_duplicator.handle_clone_products
+            taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                                                 new_store: @new_store)
+            taxon_duplicator.handle_clone_taxons
+            render json: taxon_duplicator.errors
+
+            # Duplicators::MenusDuplicator.new(old_store: @old_store,
+            #                                  new_store: @new_store).handle_clone_menus
+            # Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+            #                                      new_store: @new_store).handle_clone_menu_items
+            # Duplicators::PagesDuplicator.new(old_store: @old_store,
+            #                                  new_store: @new_store).handle_clone_pages
+            # Duplicators::SectionsDuplicator.new(old_store: @old_store,
+            #                                     new_store: @new_store).handle_clone_sections
+            # product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
+            #                                                          new_store: @new_store)
+            # render json: product_duplicator.errors unless product_duplicator.handle_clone_products
 
             raise ActiveRecord::Rollback
           end
