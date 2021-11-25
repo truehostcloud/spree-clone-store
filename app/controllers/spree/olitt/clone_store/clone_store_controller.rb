@@ -37,17 +37,24 @@ module Spree
         end
 
         def test
-          # @old_store = Spree::Store.includes(:taxonomies, :menus, :menu_items, :cms_pages, :cms_sections,
-          #                                    taxons: [:taxonomy], products: %i[variants taxons product_properties master])
-          #                          .find_by(id: source_id_param)
-          @old_store = Spree::Store.find_by(id: source_id_param)
-          @new_store = Spree::Store.find_by(id: 6)
-
           ActiveRecord::Base.transaction do
+            handle_clone_store
             Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
                                                   new_store: @new_store).handle_clone_taxonomies
-            # Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-            #                                   new_store: @new_store).handle_clone_taxons
+            Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                              new_store: @new_store).handle_clone_taxons
+            Duplicators::MenusDuplicator.new(old_store: @old_store,
+                                             new_store: @new_store).handle_clone_menus
+            Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+                                                 new_store: @new_store).handle_clone_menu_items
+            Duplicators::PagesDuplicator.new(old_store: @old_store,
+                                             new_store: @new_store).handle_clone_pages
+            Duplicators::SectionsDuplicator.new(old_store: @old_store,
+                                                new_store: @new_store).handle_clone_sections
+            product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
+                                                                     new_store: @new_store)
+            render json: product_duplicator.errors unless product_duplicator.handle_clone_products
+
             raise ActiveRecord::Rollback
           end
         end
