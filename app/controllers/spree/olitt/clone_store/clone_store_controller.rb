@@ -76,7 +76,7 @@ module Spree
           cloned_taxons = clone_update_taxon(old_taxons, new_taxonomy, new_parent_taxon)
           terminate = true unless save_models(cloned_taxons)
 
-          # old_taxons.each { |taxon| return false unless clone_taxon(taxon, terminate: terminate) }
+          old_taxons.each { |taxon| return false unless clone_taxon(taxon, terminate: terminate) }
           true
         end
 
@@ -126,7 +126,7 @@ module Spree
 
           terminate = true unless save_models(cloned_menu_items)
 
-          # old_menu_items.each { |menu_item| return false unless clone_menu_item(parent_menu_item: menu_item, terminate: terminate) }
+          old_menu_items.each { |menu_item| return false unless clone_menu_item(parent_menu_item: menu_item, terminate: terminate) }
           true
         end
 
@@ -234,10 +234,9 @@ module Spree
         # Products
         def handle_clone_products
           old_products = @old_store.products.all
-          new_products = old_products.map { |product| clone_product(old_product: product) }
+          old_products.map { |product| clone_product(old_product: product) }
 
-          return false unless save_models(new_products)
-
+          # return false unless save_models(new_products)
           true
         end
 
@@ -252,6 +251,7 @@ module Spree
             new_product.master = duplicate_master_variant(product: old_product)
             new_product.variants = old_product.variants.map { |variant| duplicate_variant(variant: variant) }
           end
+          old_product.save
         end
 
         # Linked Resources
