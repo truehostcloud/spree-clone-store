@@ -11,9 +11,9 @@ module Spree
           return unless handle_clone_taxonomies
           return unless handle_clone_taxons
           return unless handle_clone_menus
-          # return unless handle_clone_menu_items
-          # return unless handle_clone_pages
-          # return unless handle_clone_sections
+          return unless handle_clone_menu_items
+          return unless handle_clone_pages
+          return unless handle_clone_sections
           return unless handle_clone_products
 
           finish
@@ -76,7 +76,7 @@ module Spree
           cloned_taxons = clone_update_taxon(old_taxons, new_taxonomy, new_parent_taxon)
           terminate = true unless save_models(cloned_taxons)
 
-          old_taxons.each { |taxon| return false unless clone_taxon(taxon, terminate: terminate) }
+          # old_taxons.each { |taxon| return false unless clone_taxon(taxon, terminate: terminate) }
           true
         end
 
@@ -126,7 +126,7 @@ module Spree
 
           terminate = true unless save_models(cloned_menu_items)
 
-          old_menu_items.each { |menu_item| return false unless clone_menu_item(parent_menu_item: menu_item, terminate: terminate) }
+          # old_menu_items.each { |menu_item| return false unless clone_menu_item(parent_menu_item: menu_item, terminate: terminate) }
           true
         end
 
