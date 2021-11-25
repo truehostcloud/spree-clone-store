@@ -234,7 +234,8 @@ module Spree
         # Products
         def handle_clone_products
           old_products = @old_store.products.all
-          new_products = old_products.map { |product| clone_product(old_product: product) }
+          new_products = @new_store.products.build(get_model_hash(old_products))
+          # new_products = old_products.map { |product| clone_product(old_product: product) }
 
           return false unless save_models(new_products)
 
