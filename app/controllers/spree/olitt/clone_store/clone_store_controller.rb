@@ -39,8 +39,9 @@ module Spree
         def test
           ActiveRecord::Base.transaction do
             handle_clone_store
-            Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                  new_store: @new_store).handle_clone_taxonomies
+            taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+                                                                          new_store: @new_store)
+            taxonomies_duplicator.handle_clone_taxonomies
             taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
                                                                  new_store: @new_store)
             taxon_duplicator.handle_clone_taxons
