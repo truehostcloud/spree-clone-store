@@ -39,20 +39,26 @@ module Spree
         def test
           ActiveRecord::Base.transaction do
             handle_clone_store
-            taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                                          new_store: @new_store)
-            taxonomies_duplicator.handle_clone_taxonomies
-            taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                                 new_store: @new_store)
-            taxon_duplicator.handle_clone_taxons
+            # taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+            #                                                               new_store: @new_store)
+            # taxonomies_duplicator.handle_clone_taxonomies
 
-            menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                                new_store: @new_store)
-            menus_duplicator.handle_clone_menus
+            # taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+            #                                                      new_store: @new_store)
+            # taxon_duplicator.handle_clone_taxons
 
-            render json: @new_store.menus
-            # Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-            #                                      new_store: @new_store).handle_clone_menu_items
+            # menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
+            #                                                     new_store: @new_store)
+            # menus_duplicator.handle_clone_menus
+
+            # menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+            #                                                              new_store: @new_store)
+            # menu_items_duplicator.handle_clone_menu_items
+
+            x = @old_store.menus.group_by(&:location).transform_values do |values|
+              values.group_by(&:locale)
+            end
+            render json: x
             # Duplicators::PagesDuplicator.new(old_store: @old_store,
             #                                  new_store: @new_store).handle_clone_pages
             # Duplicators::SectionsDuplicator.new(old_store: @old_store,
