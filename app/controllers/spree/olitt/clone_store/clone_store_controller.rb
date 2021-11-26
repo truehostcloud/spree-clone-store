@@ -45,10 +45,12 @@ module Spree
             taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
                                                                  new_store: @new_store)
             taxon_duplicator.handle_clone_taxons
-            render json: taxon_duplicator.errors
 
-            # Duplicators::MenusDuplicator.new(old_store: @old_store,
-            #                                  new_store: @new_store).handle_clone_menus
+            menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
+                                                                new_store: @new_store)
+            menus_duplicator.handle_clone_menus
+
+            render json: @new_store.menus
             # Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
             #                                      new_store: @new_store).handle_clone_menu_items
             # Duplicators::PagesDuplicator.new(old_store: @old_store,
