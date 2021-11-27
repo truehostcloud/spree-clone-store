@@ -112,7 +112,7 @@ module Spree
           true
         end
 
-        def clone_product(old_product:)
+        def clone_product(old_product)
           old_product.dup.tap do |new_product|
             new_product.taxons = old_product.taxons.all.map { |old_taxon| @new_store.taxons.find_by(permalink: old_taxon.permalink) }
             new_product.stores = [@new_store]
