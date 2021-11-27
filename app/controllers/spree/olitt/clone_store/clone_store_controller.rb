@@ -119,7 +119,7 @@ module Spree
             new_product.deleted_at = nil
             new_product.updated_at = nil
             new_product.product_properties = reset_properties(product: old_product)
-            new_product.master = duplicate_master_variant(product: old_product)
+            new_product.master = old_product.master.dup
             # new_product.variants = nil
           end
         end
