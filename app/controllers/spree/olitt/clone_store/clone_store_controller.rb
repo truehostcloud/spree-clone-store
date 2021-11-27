@@ -105,7 +105,7 @@ module Spree
         def handle_clone_products
           old_products = @old_store.products.all
           new_products =  old_products.map { |product| 
-            clone_product(old_product: product) 
+            clone_product(product) 
           }
           return false unless save_models(new_products)
 
@@ -119,9 +119,9 @@ module Spree
             new_product.created_at = nil
             new_product.deleted_at = nil
             new_product.updated_at = nil
-            new_product.product_properties = reset_properties(product: old_product)
-            new_product.master = duplicate_master_variant(product: old_product)
-            new_product.variants = old_product.variants.map { |variant| duplicate_variant(variant: variant) }
+            new_product.product_properties = nil
+            new_product.master = nil
+            new_product.variants = nil
           end
           old_product
         end
