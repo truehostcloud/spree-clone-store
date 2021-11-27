@@ -8,7 +8,7 @@ module Spree
 
           def initialize(old_store:, new_store:)
             @old_store = old_store
-            @new_store = Spree::Store.includes(:taxonomies).find_by(store_id: new_store.id)
+            @new_store = Spree::Store.includes(:taxonomies).find_by(id: new_store.id)
           end
 
             # Products
