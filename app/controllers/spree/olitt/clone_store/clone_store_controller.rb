@@ -22,17 +22,16 @@ module Spree
                                                                new_store: @new_store).handle_clone_taxonomies
           return unless  Duplicators::TaxonsDuplicator.new(old_store: @old_store,
                                                            new_store: @new_store).handle_clone_taxons
-          # return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
-          #                                                new_store: @new_store).handle_clone_menus
-          # return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-          #                                                    new_store: @new_store).handle_clone_menu_items
-          # return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
-          #                                                new_store: @new_store).handle_clone_pages
-          # return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
-          #                                                   new_store: @new_store).handle_clone_sections
-          # return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
-          #                                                   new_store: @new_store).handle_clone_products
-          return unless handle_clone_products
+          return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
+                                                         new_store: @new_store).handle_clone_menus
+          return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+                                                             new_store: @new_store).handle_clone_menu_items
+          return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
+                                                         new_store: @new_store).handle_clone_pages
+          return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
+                                                            new_store: @new_store).handle_clone_sections
+          return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
+                                                            new_store: @new_store).handle_clone_products
 
           finish
         end
@@ -101,28 +100,7 @@ module Spree
           store
         end
 
-        # Products
-        def handle_clone_products
-          old_products = @old_store.products.all
-          new_products =  old_products.map { |product| clone_product(product) }
-
-          return false unless save_models(new_products)
-
-          true
-        end
-
-        def clone_product(old_product)
-          old_product.dup.tap do |new_product|
-            new_product.taxons = old_product.taxons.all.map { |old_taxon| @new_store.taxons.find_by(permalink: old_taxon.permalink) }
-            new_product.stores = [@new_store]
-            new_product.created_at = nil
-            new_product.deleted_at = nil
-            new_product.updated_at = nil
-            new_product.product_properties = reset_properties(product: old_product)
-            new_product.master = old_product.master.dup
-            # new_product.variants = nil
-          end
-        end
+        
 
         # Finish Lifecycle
 
