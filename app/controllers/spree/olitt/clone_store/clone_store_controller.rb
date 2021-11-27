@@ -119,11 +119,11 @@ module Spree
           #   new_product.created_at = nil
           #   new_product.deleted_at = nil
           #   new_product.updated_at = nil
-            new_product.product_properties = reset_properties(product: old_product)
-          #   new_product.master = nil
+            # new_product.product_properties = reset_properties(product: old_product)
+            new_product.master = duplicate_master_variant(product: old_product)
           #   new_product.variants = nil
           end
-          # old_product
+          old_product
         end
 
         # Finish Lifecycle
