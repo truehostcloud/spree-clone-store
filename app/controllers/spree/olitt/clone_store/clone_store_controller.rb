@@ -116,14 +116,14 @@ module Spree
           old_product.dup.tap do |new_product|
             new_product.taxons = old_product.taxons.all.map { |old_taxon| @new_store.taxons.find_by(permalink: old_taxon.permalink) }
             new_product.stores = [@new_store]
-            new_product.created_at = nil
-            new_product.deleted_at = nil
-            new_product.updated_at = nil
-            new_product.product_properties = nil
-            new_product.master = nil
-            new_product.variants = nil
+          #   new_product.created_at = nil
+          #   new_product.deleted_at = nil
+          #   new_product.updated_at = nil
+          #   new_product.product_properties = nil
+          #   new_product.master = nil
+          #   new_product.variants = nil
           end
-          old_product
+          # old_product
         end
 
         # Finish Lifecycle
