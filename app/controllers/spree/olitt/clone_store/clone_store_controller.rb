@@ -22,14 +22,14 @@ module Spree
                                                                new_store: @new_store).handle_clone_taxonomies
           return unless  Duplicators::TaxonsDuplicator.new(old_store: @old_store,
                                                            new_store: @new_store).handle_clone_taxons
-          return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                         new_store: @new_store).handle_clone_menus
-          return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-                                                             new_store: @new_store).handle_clone_menu_items
-          return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
-                                                         new_store: @new_store).handle_clone_pages
-          return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
-                                                            new_store: @new_store).handle_clone_sections
+          # return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
+          #                                                new_store: @new_store).handle_clone_menus
+          # return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+          #                                                    new_store: @new_store).handle_clone_menu_items
+          # return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
+          #                                                new_store: @new_store).handle_clone_pages
+          # return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
+          #                                                   new_store: @new_store).handle_clone_sections
           # return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
           #                                                   new_store: @new_store).handle_clone_products
           return unless handle_clone_products
@@ -122,6 +122,7 @@ module Spree
             new_product.master = duplicate_master_variant(product: old_product)
             new_product.variants = old_product.variants.map { |variant| duplicate_variant(variant: variant) }
           end
+          old_product
         end
 
         # Finish Lifecycle
