@@ -125,7 +125,6 @@ module Spree
             new_product.master = duplicate_master_variant(product: old_product)
             new_product.variants = old_product.variants.map { |variant| duplicate_variant(variant: variant) }
           end
-          new_product
         end
 
         # Finish Lifecycle
