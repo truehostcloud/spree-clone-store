@@ -59,7 +59,7 @@ module Spree
                 @errors << menu_item.errors
                 break
               end
-              # @new_taxons_cache[menu_item.permalink] = [taxon]
+              @new_taxons_cache[menu_item.permalink] = [taxon]
             end
           end
 
