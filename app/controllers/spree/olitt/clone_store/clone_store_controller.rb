@@ -54,11 +54,9 @@ module Spree
             # menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
             #                                                              new_store: @new_store)
             # menu_items_duplicator.handle_clone_menu_items
-
-            x = @old_store.menus.group_by(&:location).transform_values do |values|
-              values.group_by(&:locale)
-            end
-            render json: x
+            # render json: @new_store.menu_items.group_by(&:parent).transform_values { |items| items.group_by(&:menu) }
+            # x = @old_store.menu_items.group_by(&:id)
+            # render plain: x[2].first == @old_store.menu_items.find_by(id: 2)
             # Duplicators::PagesDuplicator.new(old_store: @old_store,
             #                                  new_store: @new_store).handle_clone_pages
             # Duplicators::SectionsDuplicator.new(old_store: @old_store,
@@ -99,8 +97,6 @@ module Spree
           store.default = false
           store
         end
-
-        
 
         # Finish Lifecycle
 
