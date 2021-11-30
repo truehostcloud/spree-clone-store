@@ -18,20 +18,40 @@ module Spree
         def clone
           return unless handle_clone_store
 
-          return unless  Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                               new_store: @new_store).handle_clone_taxonomies
-          return unless  Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                           new_store: @new_store).handle_clone_taxons
-          return unless Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                         new_store: @new_store).handle_clone_menus
-          return unless Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-                                                             new_store: @new_store).handle_clone_menu_items
-          return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
-                                                         new_store: @new_store).handle_clone_pages
-          return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
-                                                            new_store: @new_store).handle_clone_sections
-          return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
-                                                            new_store: @new_store).handle_clone_products
+          taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+                                                                        new_store: @new_store)
+          taxonomies_duplicator.handle_clone_taxonomies
+
+          return render_error(duplicator: taxonomies_duplicator) if taxonomies_duplicator.errors_are_present?
+
+          taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                                               new_store: @new_store,
+                                                               taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
+                                                               root_taxons: taxonomies_duplicator.root_taxons)
+          taxon_duplicator.handle_clone_taxons
+
+          return render_error(duplicator: taxon_duplicator) if taxon_duplicator.errors_are_present?
+
+          menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
+                                                              new_store: @new_store)
+          menus_duplicator.handle_clone_menus
+
+          return render_error(duplicator: menus_duplicator) if menus_duplicator.errors_are_present?
+
+          menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+                                                                       new_store: @new_store,
+                                                                       new_menus_cache: menus_duplicator.menus_cache,
+                                                                       root_menu_items: menus_duplicator.root_menu_items)
+          menu_items_duplicator.handle_clone_menu_items
+
+          return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
+
+          # return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
+          #                                                new_store: @new_store).handle_clone_pages
+          # return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
+          #                                                   new_store: @new_store).handle_clone_sections
+          # return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
+          #                                                   new_store: @new_store).handle_clone_products
 
           finish
         end
@@ -43,23 +63,31 @@ module Spree
                                                                           new_store: @new_store)
             taxonomies_duplicator.handle_clone_taxonomies
 
+            return render_error(duplicator: taxonomies_duplicator) if taxonomies_duplicator.errors_are_present?
+
             taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                                 new_store: @new_store)
+                                                                 new_store: @new_store,
+                                                                 taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
+                                                                 root_taxons: taxonomies_duplicator.root_taxons)
             taxon_duplicator.handle_clone_taxons
+
+            return render_error(duplicator: taxon_duplicator) if taxon_duplicator.errors_are_present?
 
             menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
                                                                 new_store: @new_store)
             menus_duplicator.handle_clone_menus
+
+            return render_error(duplicator: menus_duplicator) if menus_duplicator.errors_are_present?
 
             menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
                                                                          new_store: @new_store,
                                                                          new_menus_cache: menus_duplicator.menus_cache,
                                                                          root_menu_items: menus_duplicator.root_menu_items)
             menu_items_duplicator.handle_clone_menu_items
-            render json: menu_items_duplicator.errors
-            # render json: @new_store.menu_items.group_by(&:parent).transform_values { |items| items.group_by(&:menu) }
-            # x = @old_store.menu_items.group_by(&:id)
-            # render plain: x[2].first == @old_store.menu_items.find_by(id: 2)
+
+            return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
+
+            render json: @new_store.menu_items
             # Duplicators::PagesDuplicator.new(old_store: @old_store,
             #                                  new_store: @new_store).handle_clone_pages
             # Duplicators::SectionsDuplicator.new(old_store: @old_store,
@@ -72,12 +100,13 @@ module Spree
           end
         end
 
+        def render_error(duplicator:)
+          render json: duplicator.errors
+        end
+
         # Store
         def handle_clone_store
-          @old_store = Spree::Store
-                       .includes(:taxonomies, :menus, :menu_items, :cms_pages, :cms_sections,
-                                 taxons: [:taxonomy], products: %i[variants taxons product_properties master])
-                       .find_by(id: source_id_param)
+          @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup

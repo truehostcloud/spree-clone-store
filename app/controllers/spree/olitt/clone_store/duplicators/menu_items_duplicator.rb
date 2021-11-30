@@ -11,7 +11,7 @@ module Spree
             @new_menus_by_location_locale = new_menus_cache
             @old_to_new_menu_item_map = root_menu_items
 
-            @old_menu_items_by_parent = @old_store.menu_items.group_by(&:parent)
+            @old_menu_items_by_parent = @old_store.menu_items.includes(%i[parent menu]).group_by(&:parent)
 
             @linked_resource = LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
           end
@@ -21,7 +21,7 @@ module Spree
           end
 
           def clone_child_menu_item(parent_menu_item:)
-            return if are_errors_present?
+            return if errors_are_present?
 
             return unless @old_menu_items_by_parent.key?(parent_menu_item)
 

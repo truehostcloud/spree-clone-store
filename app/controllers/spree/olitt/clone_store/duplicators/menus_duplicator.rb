@@ -14,7 +14,7 @@ module Spree
           end
 
           def handle_clone_menus
-            menus = @old_store.menus
+            menus = @old_store.menus.includes([:root])
             menus.map do |menu|
               new_menu = menu.dup
               new_menu.store = @new_store

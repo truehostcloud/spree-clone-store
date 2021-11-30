@@ -9,13 +9,13 @@ module Spree
             @errors = []
           end
 
-          def are_errors_present?
+          def errors_are_present?
             !@errors.empty?
           end
 
           def save_models(models:)
             models.each do |model|
-              break if are_errors_present?
+              break if errors_are_present?
 
               save_model(model: model)
             end
