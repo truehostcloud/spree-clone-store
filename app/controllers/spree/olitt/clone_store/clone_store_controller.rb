@@ -46,8 +46,12 @@ module Spree
 
           return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
 
-          # return unless Duplicators::PagesDuplicator.new(old_store: @old_store,
-          #                                                new_store: @new_store).handle_clone_pages
+          page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
+                                                             new_store: @new_store)
+          page_duplicator.handle_clone_pages
+
+          return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
+
           # return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
           #                                                   new_store: @new_store).handle_clone_sections
           # return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
@@ -59,39 +63,48 @@ module Spree
         def test
           ActiveRecord::Base.transaction do
             handle_clone_store
-            taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                                          new_store: @new_store)
-            taxonomies_duplicator.handle_clone_taxonomies
+            # taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+            #                                                               new_store: @new_store)
+            # taxonomies_duplicator.handle_clone_taxonomies
 
-            return render_error(duplicator: taxonomies_duplicator) if taxonomies_duplicator.errors_are_present?
+            # return render_error(duplicator: taxonomies_duplicator) if taxonomies_duplicator.errors_are_present?
 
-            taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                                 new_store: @new_store,
-                                                                 taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
-                                                                 root_taxons: taxonomies_duplicator.root_taxons)
-            taxon_duplicator.handle_clone_taxons
+            # taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+            #                                                      new_store: @new_store,
+            #                                                      taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
+            #                                                      root_taxons: taxonomies_duplicator.root_taxons)
+            # taxon_duplicator.handle_clone_taxons
 
-            return render_error(duplicator: taxon_duplicator) if taxon_duplicator.errors_are_present?
+            # return render_error(duplicator: taxon_duplicator) if taxon_duplicator.errors_are_present?
 
-            menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                                new_store: @new_store)
-            menus_duplicator.handle_clone_menus
+            # menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
+            #                                                     new_store: @new_store)
+            # menus_duplicator.handle_clone_menus
 
-            return render_error(duplicator: menus_duplicator) if menus_duplicator.errors_are_present?
+            # return render_error(duplicator: menus_duplicator) if menus_duplicator.errors_are_present?
 
-            menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-                                                                         new_store: @new_store,
-                                                                         new_menus_cache: menus_duplicator.menus_cache,
-                                                                         root_menu_items: menus_duplicator.root_menu_items)
-            menu_items_duplicator.handle_clone_menu_items
+            # menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+            #                                                              new_store: @new_store,
+            #                                                              new_menus_cache: menus_duplicator.menus_cache,
+            #                                                              root_menu_items: menus_duplicator.root_menu_items)
+            # menu_items_duplicator.handle_clone_menu_items
 
-            return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
+            # return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
 
-            render json: @new_store.menu_items
-            # Duplicators::PagesDuplicator.new(old_store: @old_store,
-            #                                  new_store: @new_store).handle_clone_pages
-            # Duplicators::SectionsDuplicator.new(old_store: @old_store,
-            #                                     new_store: @new_store).handle_clone_sections
+            page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
+                                                               new_store: @new_store)
+            page_duplicator.handle_clone_pages
+
+            return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
+
+            render json: @new_store.cms_pages
+
+            section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
+                                                                     new_store: @new_store)
+            section_duplicator.handle_clone_sections
+
+            return render_error(duplicator: section_duplicator) if section_duplicator.errors_are_present?
+
             # product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
             #                                                          new_store: @new_store)
             # render json: product_duplicator.errors unless product_duplicator.handle_clone_products
