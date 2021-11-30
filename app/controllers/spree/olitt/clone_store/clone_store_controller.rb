@@ -39,21 +39,24 @@ module Spree
         def test
           ActiveRecord::Base.transaction do
             handle_clone_store
-            # taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-            #                                                               new_store: @new_store)
-            # taxonomies_duplicator.handle_clone_taxonomies
+            taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
+                                                                          new_store: @new_store)
+            taxonomies_duplicator.handle_clone_taxonomies
 
-            # taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-            #                                                      new_store: @new_store)
-            # taxon_duplicator.handle_clone_taxons
+            taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
+                                                                 new_store: @new_store)
+            taxon_duplicator.handle_clone_taxons
 
-            # menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
-            #                                                     new_store: @new_store)
-            # menus_duplicator.handle_clone_menus
+            menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
+                                                                new_store: @new_store)
+            menus_duplicator.handle_clone_menus
 
-            # menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-            #                                                              new_store: @new_store)
-            # menu_items_duplicator.handle_clone_menu_items
+            menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
+                                                                         new_store: @new_store,
+                                                                         new_menus_cache: menus_duplicator.menus_cache,
+                                                                         root_menu_items: menus_duplicator.root_menu_items)
+            menu_items_duplicator.handle_clone_menu_items
+            render json: menu_items_duplicator.errors
             # render json: @new_store.menu_items.group_by(&:parent).transform_values { |items| items.group_by(&:menu) }
             # x = @old_store.menu_items.group_by(&:id)
             # render plain: x[2].first == @old_store.menu_items.find_by(id: 2)
