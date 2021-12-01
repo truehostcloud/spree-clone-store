@@ -33,6 +33,12 @@ module Spree
             end
             nil
           end
+
+          def reset_section_resource(section:)
+            section.linked_resource_id = nil
+            section.linked_resource_type = nil
+            section
+          end
         end
       end
     end
