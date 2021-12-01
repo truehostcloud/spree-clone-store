@@ -97,19 +97,21 @@ module Spree
 
             return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
 
-            # page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
-            #                                                    new_store: @new_store)
-            # page_duplicator.handle_clone_pages
+            page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
+                                                               new_store: @new_store)
+            page_duplicator.handle_clone_pages
 
-            # return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
+            return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
 
-            # render json: @new_store.cms_pages
+            linked_resource.pages_cache = page_duplicator.pages_cache
 
-            # section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
-            #                                                          new_store: @new_store)
-            # section_duplicator.handle_clone_sections
+            section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
+                                                                     new_store: @new_store,
+                                                                     pages_cache: page_duplicator.pages_cache,
+                                                                     linked_resource: linked_resource)
+            section_duplicator.handle_clone_sections
 
-            # return render_error(duplicator: section_duplicator) if section_duplicator.errors_are_present?
+            return render_error(duplicator: section_duplicator) if section_duplicator.errors_are_present?
 
             # product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
             #                                                          new_store: @new_store)
