@@ -97,8 +97,6 @@ module Spree
 
             return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
 
-            render json: @new_store.menu_items
-
             # page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
             #                                                    new_store: @new_store)
             # page_duplicator.handle_clone_pages

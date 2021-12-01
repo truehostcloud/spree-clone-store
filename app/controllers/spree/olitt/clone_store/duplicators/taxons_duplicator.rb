@@ -13,40 +13,33 @@ module Spree
             @taxons_cache = root_taxons
             @new_taxonomies_by_name = taxonomies_cache
 
-            @old_taxons_by_parent = @old_store.taxons.includes(%i[taxonomy parent]).group_by(&:parent_id)
+            @depth = 1
+
+            @old_taxons_by_depth = @old_store.taxons.includes(%i[taxonomy parent]).group_by(&:depth)
           end
 
           def handle_clone_taxons
-            clone_child_taxons(parent_taxon_id: nil)
+            while @old_taxons_by_depth[@depth] && !errors_are_present?
+              old_taxons = @old_taxons_by_depth[@depth]
+              old_taxons.each do |old_taxon|
+                save_new_taxon(old_taxon: old_taxon)
+                break if errors_are_present?
+              end
+              @depth += 1
+            end
           end
 
-          def clone_child_taxons(parent_taxon_id:)
-            return unless @old_taxons_by_parent.key?(parent_taxon_id)
-
-            old_child_taxons = get_old_child_taxons(parent_taxon_id: parent_taxon_id)
-
-            return old_child_taxons.each { |child_taxon| clone_child_taxons(parent_taxon_id: child_taxon.id) } if parent_taxon_id.nil?
-
-            save_new_taxons(old_child_taxons: old_child_taxons)
-
+          def save_new_taxon(old_taxon:)
+            new_taxon = old_taxon.dup
+            new_taxon.taxonomy = get_new_taxonomy(old_taxon: old_taxon)
+            new_taxon.parent = get_new_parent_taxon(old_taxon: old_taxon)
+            attributes = new_taxon.attributes
+            attributes = attributes.except('lft', 'rgt', 'depth')
+            new_taxon = Spree::Taxon.new attributes
+            save_model(model: new_taxon)
             return if errors_are_present?
 
-            old_child_taxons.each { |child_taxon| clone_child_taxons(parent_taxon_id: child_taxon.id) }
-          end
-
-          def save_new_taxons(old_child_taxons:)
-            old_child_taxons.each do |old_taxon|
-              new_taxon = old_taxon.dup
-              new_taxon.taxonomy = get_new_taxonomy(old_taxon: old_taxon)
-              new_taxon.parent = get_new_parent_taxon(old_taxon: old_taxon)
-              attributes = new_taxon.attributes
-              attributes = attributes.except('lft', 'rgt', 'depth')
-              new_taxon = Spree::Taxon.new attributes
-              save_model(model: new_taxon)
-              break if errors_are_present?
-
-              @taxons_cache[new_taxon.permalink] = [new_taxon]
-            end
+            @taxons_cache[new_taxon.permalink] = [new_taxon]
           end
 
           def get_old_child_taxons(parent_taxon_id:)

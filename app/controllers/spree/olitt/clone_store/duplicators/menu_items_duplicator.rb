@@ -12,7 +12,7 @@ module Spree
             @old_to_new_menu_item_map = root_menu_items
             @linked_resource = linked_resource
 
-            @depth = 0
+            @depth = 1
 
             @old_menu_items_by_depth = @old_store.menu_items.includes(%i[parent menu]).group_by(&:depth)
           end
@@ -34,6 +34,8 @@ module Spree
             new_menu_item.menu = get_new_menu(old_menu: old_menu_item.menu)
             new_menu_item = @linked_resource.assign_linked_resource(model: new_menu_item)
             save_model(model: new_menu_item)
+            return if errors_are_present?
+
             @old_to_new_menu_item_map[old_menu_item] = new_menu_item
           end
 
