@@ -3,6 +3,8 @@ module Spree
     module CloneStore
       module Duplicators
         class ProductsDuplicator < BaseDuplicator
+          attr_reader :product_cache
+
           include Spree::Olitt::CloneStore::ProductHelpers
 
           def initialize(old_store:, new_store:, taxon_cache:)
@@ -10,6 +12,8 @@ module Spree
             @old_store = old_store
             @new_store = new_store
             @taxon_cache = taxon_cache
+
+            @products_cache = {}
           end
 
           def handle_clone_products
@@ -30,6 +34,9 @@ module Spree
             new_product.master = duplicate_master_variant(product: old_product)
             new_product.product_properties = reset_properties(product: old_product)
             save_model(model: new_product)
+            return if errors_are_present?
+
+            @products_cache[new_product.slug] = new_product
           end
 
           def get_new_taxons(old_product:)
