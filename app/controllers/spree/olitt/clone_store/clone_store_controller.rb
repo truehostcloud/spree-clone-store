@@ -18,6 +18,8 @@ module Spree
         def clone
           return unless handle_clone_store
 
+          linked_resource = Duplicators::LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
+
           taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
                                                                         new_store: @new_store)
           taxonomies_duplicator.handle_clone_taxonomies
@@ -32,6 +34,8 @@ module Spree
 
           return render_error(duplicator: taxon_duplicator) if taxon_duplicator.errors_are_present?
 
+          linked_resource.taxons_cache = taxon_duplicator.taxons_cache
+
           menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
                                                               new_store: @new_store)
           menus_duplicator.handle_clone_menus
@@ -41,7 +45,8 @@ module Spree
           menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
                                                                        new_store: @new_store,
                                                                        new_menus_cache: menus_duplicator.menus_cache,
-                                                                       root_menu_items: menus_duplicator.root_menu_items)
+                                                                       root_menu_items: menus_duplicator.root_menu_items,
+                                                                       linked_resource: linked_resource)
           menu_items_duplicator.handle_clone_menu_items
 
           return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
@@ -52,10 +57,21 @@ module Spree
 
           return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
 
-          # return unless Duplicators::SectionsDuplicator.new(old_store: @old_store,
-          #                                                   new_store: @new_store).handle_clone_sections
-          # return unless Duplicators::ProductsDuplicator.new(old_store: @old_store,
-          #                                                   new_store: @new_store).handle_clone_products
+          linked_resource.pages_cache = page_duplicator.pages_cache
+
+          section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
+                                                                   new_store: @new_store,
+                                                                   pages_cache: page_duplicator.pages_cache,
+                                                                   linked_resource: linked_resource)
+          section_duplicator.handle_clone_sections
+
+          return render_error(duplicator: section_duplicator) if section_duplicator.errors_are_present?
+
+          product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
+                                                                   new_store: @new_store,
+                                                                   taxon_cache: taxon_duplicator.taxons_cache)
+
+          render render_error(duplicator: product_duplicator) if product_duplicator.errors_are_present?
 
           finish
         end
@@ -113,9 +129,12 @@ module Spree
 
             return render_error(duplicator: section_duplicator) if section_duplicator.errors_are_present?
 
-            # product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
-            #                                                          new_store: @new_store)
-            # render json: product_duplicator.errors unless product_duplicator.handle_clone_products
+            product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
+                                                                     new_store: @new_store,
+                                                                     taxon_cache: taxon_duplicator.taxons_cache)
+            product_duplicator.handle_clone_products
+
+            render render_error(duplicator: product_duplicator) if product_duplicator.errors_are_present?
 
             raise ActiveRecord::Rollback
           end
