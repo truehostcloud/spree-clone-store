@@ -3,41 +3,55 @@ module Spree
     module CloneStore
       module Duplicators
         class LinkedResourceDuplicator
-          include Spree::Olitt::CloneStore::CloneStoreHelpers
+          attr_accessor :taxons_cache, :pages_cache, :products_cache
 
           def initialize(old_store:, new_store:)
             @old_store = old_store
             @new_store = new_store
+
+            @taxons_cache = {}
+            @pages_cache = {}
+            @products_cache = {}
+
+            @old_taxons = nil
+            @old_pages = nil
+            @old_products = nil
           end
 
-          def get_new_linked_taxon(old_taxon:)
-            if old_taxon.instance_of?('Spree::Taxon'.constantize)
-              new_taxon = @new_store.taxons.find_by(permalink: old_taxon.permalink)
-              return new_taxon.id
-            end
-            nil
+          def assign_linked_resource(model:)
+            return assign_taxon(model: model) if model.linked_resource_type == 'Spree::Taxon'
+
+            return assign_product(model: model) if model.linked_resource_type == 'Spree::Product'
+
+            return assign_page(model: model) if model.linked_resource_type == 'Spree::CmsPage'
+
+            model
           end
 
-          def get_new_linked_product(old_product:)
-            if old_product.instance_of?('Spree::Product'.constantize)
-              new_product = @new_store.products.find_by(slug: old_product.slug)
-              return new_product.id
-            end
-            nil
+          private
+
+          def assign_taxon(model:)
+            @old_taxons = @old_store.taxons.group_by(&:id) if @old_taxons.nil?
+            old_taxon = @old_taxons[model.linked_resource_id].first
+            new_taxon = @taxons_cache[old_taxon.permalink].first
+            model.linked_resource_id = new_taxon.id
+            model
           end
 
-          def get_new_linked_page(old_page:)
-            if old_page.instance_of?('Spree::CmsPage'.constantize)
-              new_page = @new_store.cms_pages.find_by(slug: old_page.slug)
-              return new_page.id
-            end
-            nil
+          def assign_product(model:)
+            @old_products = @old_store.products.group_by(&:id) if @old_products.nil?
+            old_product = @old_products[model.linked_resource_id].first
+            new_product = @products_cache[old_product.slug].first
+            model.linked_resource_id = new_product.id
+            model
           end
 
-          def reset_section_resource(section:)
-            section.linked_resource_id = nil
-            section.linked_resource_type = nil
-            section
+          def assign_page(model:)
+            @old_pages = @old_store.cms_pages.group_by(&:id) if @old_pages.nil?
+            old_page = @old_pages[model.linked_resource_id].first
+            new_page = @pages_cache[old_page.slug]
+            model.linked_resource_id = new_page.id
+            model
           end
         end
       end

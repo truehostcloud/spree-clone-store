@@ -3,12 +3,14 @@ module Spree
     module CloneStore
       module Duplicators
         class TaxonsDuplicator < BaseDuplicator
+          attr_reader :taxons_cache
+
           def initialize(old_store:, new_store:, taxonomies_cache:, root_taxons:)
             super()
             @old_store = old_store
             @new_store = new_store
 
-            @new_taxons_cache = root_taxons
+            @taxons_cache = root_taxons
             @new_taxonomies_by_name = taxonomies_cache
 
             @old_taxons_by_parent = @old_store.taxons.includes(%i[taxonomy parent]).group_by(&:parent_id)
@@ -43,7 +45,7 @@ module Spree
               save_model(model: new_taxon)
               break if errors_are_present?
 
-              @new_taxons_cache[new_taxon.permalink] = [new_taxon]
+              @taxons_cache[new_taxon.permalink] = [new_taxon]
             end
           end
 
@@ -56,7 +58,7 @@ module Spree
           end
 
           def get_new_parent_taxon(old_taxon:)
-            @new_taxons_cache[old_taxon.parent.permalink].first
+            @taxons_cache[old_taxon.parent.permalink].first
           end
         end
       end
