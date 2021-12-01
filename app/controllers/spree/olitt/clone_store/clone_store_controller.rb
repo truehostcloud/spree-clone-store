@@ -58,7 +58,7 @@ module Spree
 
             linked_resource.products_cache = product_duplicator.product_cache
 
-            # sections
+            # Sections
             section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
                                                                      new_store: @new_store,
                                                                      pages_cache: page_duplicator.pages_cache,
@@ -131,7 +131,7 @@ module Spree
 
             linked_resource.products_cache = product_duplicator.product_cache
 
-            # sections
+            # Sections
             section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
                                                                      new_store: @new_store,
                                                                      pages_cache: page_duplicator.pages_cache,
