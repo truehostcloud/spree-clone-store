@@ -14,20 +14,6 @@ module Spree
           Spree::Api::V2::Platform::StoreSerializer
         end
 
-        def get_model_hash(models)
-          models.map(&:dup).map(&:attributes)
-        end
-
-        def save_models(models)
-          models.each do |model|
-            unless model.save
-              render_error_payload(model.errors)
-              return false
-            end
-          end
-          true
-        end
-
         def required_store_params
           name, url, code, mail_from_address = store_params.values_at(:name, :url, :code, :mail_from_address)
 

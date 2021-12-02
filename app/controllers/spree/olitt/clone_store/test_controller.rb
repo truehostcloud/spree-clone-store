@@ -10,10 +10,10 @@ require_relative 'duplicators/taxons_duplicator'
 module Spree
   module Olitt
     module CloneStore
-      class CloneStoreController < Spree::Api::V2::BaseController
+      class TestController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
-        def clone
+        def test
           ActiveRecord::Base.transaction do
             return unless handle_clone_store
 
@@ -82,7 +82,7 @@ module Spree
 
             return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
 
-            finish
+            raise ActiveRecord::Rollback
           end
         end
 
@@ -91,7 +91,6 @@ module Spree
           raise ActiveRecord::Rollback
         end
 
-        # Store
         def handle_clone_store
           @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
@@ -115,12 +114,6 @@ module Spree
           store.mail_from_address = mail_from_address
           store.default = false
           store
-        end
-
-        # Finish Lifecycle
-
-        def finish
-          render_serialized_payload(201) { serialize_resource(@new_store) }
         end
       end
     end
