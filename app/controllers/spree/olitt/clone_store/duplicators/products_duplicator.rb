@@ -3,7 +3,7 @@ module Spree
     module CloneStore
       module Duplicators
         class ProductsDuplicator < BaseDuplicator
-          attr_reader :product_cache
+          attr_reader :products_cache
 
           include Spree::Olitt::CloneStore::ProductHelpers
 

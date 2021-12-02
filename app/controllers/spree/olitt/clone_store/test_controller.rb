@@ -54,7 +54,7 @@ module Spree
 
             return render_error(duplicator: product_duplicator) if product_duplicator.errors_are_present?
 
-            linked_resource.products_cache = product_duplicator.product_cache
+            linked_resource.products_cache = product_duplicator.products_cache
 
             # Sections
             section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
