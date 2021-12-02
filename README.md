@@ -6,25 +6,25 @@ Introduction goes here.
 
 1. Add this extension to your Gemfile with this line:
 
-    ```ruby
-    gem 'spree_clone_store'
-    ```
+   ```ruby
+   gem 'spree_clone_store'
+   ```
 
 2. Install the gem using Bundler
 
-    ```ruby
-    bundle install
-    ```
+   ```ruby
+   bundle install
+   ```
 
 3. Copy & run migrations
 
-    ```ruby
-    bundle exec rails g spree_clone_store:install
-    ```
+   ```ruby
+   bundle exec rails g spree_clone_store:install
+   ```
 
 4. Restart your server
 
-  If your server was running, restart it so that it can find the assets properly.
+If your server was running, restart it so that it can find the assets properly.
 
 ## Testing
 
