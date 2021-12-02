@@ -2,88 +2,45 @@ module Spree
   module Olitt
     module CloneStore
       module Duplicators
-        class MenuItemsDuplicator
-          include Spree::Olitt::CloneStore::CloneStoreHelpers
-
-          def initialize(old_store:, new_store:)
+        class MenuItemsDuplicator < BaseDuplicator
+          def initialize(old_store:, new_store:, new_menus_cache:, root_menu_items:, linked_resource:)
+            super()
             @old_store = old_store
-            @new_store = Spree::Store.includes(:menus).find_by(id: new_store.id)
-            @linked_resource = LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
+            @new_store = new_store
+
+            @new_menus_by_location_locale = new_menus_cache
+            @old_to_new_menu_item_map = root_menu_items
+            @linked_resource = linked_resource
+
+            @depth = 1
+
+            @old_menu_items_by_depth = @old_store.menu_items.includes(%i[parent menu]).group_by(&:depth)
           end
 
           def handle_clone_menu_items
-            old_root_menu_items = @old_store.menu_items.where(parent: nil).order(depth: :asc).order(id: :asc)
-            old_root_menu_items.each do |root_menu_item|
-              return false unless clone_menu_item(parent_menu_item: root_menu_item,
-                                                  terminate: false)
+            while @old_menu_items_by_depth[@depth] && !errors_are_present?
+              old_menu_items = @old_menu_items_by_depth[@depth]
+              old_menu_items.each do |old_menu_item|
+                save_menu_item(old_menu_item: old_menu_item)
+                break if errors_are_present?
+              end
+              @depth += 1
             end
-            true
           end
 
-          def clone_menu_item(parent_menu_item:, terminate: false)
-            return false if terminate
+          def save_menu_item(old_menu_item:)
+            new_menu_item = old_menu_item.dup
+            new_menu_item.parent = @old_to_new_menu_item_map[old_menu_item.parent]
+            new_menu_item.menu = get_new_menu(old_menu: old_menu_item.menu)
+            new_menu_item = @linked_resource.assign_linked_resource(model: new_menu_item)
+            save_model(model: new_menu_item)
+            return if errors_are_present?
 
-            old_menu_items = @old_store.menu_items.where(parent: parent_menu_item, menu: parent_menu_item.menu)
-                                       .order(depth: :asc).order(id: :asc)
-            return false if old_menu_items.nil?
-
-            cloned_menu_items = clone_menu_item_helper(old_menu_items: old_menu_items, parent_menu_item: parent_menu_item)
-
-            terminate = true unless save_models(cloned_menu_items)
-
-            old_menu_items.each { |menu_item| return false unless clone_menu_item(parent_menu_item: menu_item, terminate: terminate) }
-            true
+            @old_to_new_menu_item_map[old_menu_item] = new_menu_item
           end
 
-          def clone_menu_item_helper(old_menu_items:, parent_menu_item:)
-            new_menu = @new_store.menus.find_by(location: parent_menu_item.menu.location, locale: parent_menu_item.menu.locale)
-            new_parent_menu_item = get_new_parent_menu_item(new_menu: new_menu, old_parent_menu_item: parent_menu_item)
-
-            clone_update_menu_item(old_menu_items: old_menu_items,
-                                   new_menu: new_menu, new_parent_menu_item: new_parent_menu_item)
-          end
-
-          def clone_update_menu_item(old_menu_items:, new_menu:, new_parent_menu_item:)
-            menu_items = old_menu_items.map do |menu_item|
-              new_menu_item = menu_item.dup
-              new_menu_item.parent = new_parent_menu_item
-              new_menu_item
-            end
-            attributes_for_each_taxon = get_model_hash(menu_items).map do |attributes|
-              attributes.except('lft', 'rgt', 'depth')
-            end
-            new_menu.menu_items.build(attributes_for_each_taxon)
-          end
-
-          def get_new_parent_menu_item(new_menu:, old_parent_menu_item:)
-            old_grandparent_menu_item = old_parent_menu_item.parent
-            new_grandparent_menu_item = nil
-            unless old_grandparent_menu_item.nil?
-              new_grandparent_menu_item = @new_store.menu_items.joins(:menu).find_by(menu: new_menu,
-                                                                                     name: old_grandparent_menu_item.name)
-
-            end
-
-            @new_store.menu_items.joins(:menu).find_by(menu: new_menu, name: old_parent_menu_item.name, parent: new_grandparent_menu_item)
-          end
-
-          def get_new_menu_item_linked_resource(resource_type:, resource_id:)
-            resource = resource_type.constantize
-            old_linked_resource = resource.find_by(id: resource_id)
-
-            if old_linked_resource.instance_of?('Spree::Taxon'.constantize)
-              return @linked_resource.get_new_linked_taxon(old_taxon: old_linked_resource)
-            end
-
-            if old_linked_resource.instance_of?('Spree::Product'.constantize)
-              return @linked_resource.get_new_linked_product(old_product: old_linked_resource)
-            end
-
-            if old_linked_resource.instance_of?('Spree::CmsPage'.constantize)
-              return @linked_resource.get_new_linked_page(old_page: old_linked_resource)
-            end
-
-            nil
+          def get_new_menu(old_menu:)
+            @new_menus_by_location_locale[old_menu.location][old_menu.locale].first
           end
         end
       end
