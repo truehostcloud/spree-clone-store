@@ -36,7 +36,7 @@ module Spree
             save_model(model: new_product)
             return if errors_are_present?
 
-            @products_cache[new_product.slug] = [new_product]
+            @products_cache[old_product.slug] = [new_product]
           end
 
           def get_new_taxons(old_product:)
