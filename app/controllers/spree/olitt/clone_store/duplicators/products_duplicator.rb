@@ -31,7 +31,7 @@ module Spree
             new_product = reset_timestamps(product: new_product)
             new_product.taxons = get_new_taxons(old_product: old_product)
             new_product.variants = get_new_variants(old_product: old_product)
-            new_product.master = duplicate_master_variant(product: old_product)
+            new_product.master = duplicate_master_variant(product: old_product, code: @new_store.code)
             new_product.product_properties = reset_properties(product: old_product)
             save_model(model: new_product)
             return if errors_are_present?
@@ -44,7 +44,7 @@ module Spree
           end
 
           def get_new_variants(old_product:)
-            old_product.variants.map { |variant| duplicate_variant(variant: variant) }
+            old_product.variants.map { |variant| duplicate_variant(variant: variant, code: @new_store.code) }
           end
 
           def reset_timestamps(product:)
