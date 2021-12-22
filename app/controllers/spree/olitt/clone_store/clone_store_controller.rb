@@ -97,6 +97,8 @@ module Spree
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           store = clone_and_update_store @old_store.dup
+          store.logo.attach(@old_store.logo.blob)
+
           unless store.save
             render_error_payload(store.errors)
             return false
