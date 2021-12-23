@@ -49,6 +49,7 @@ module Spree
             # Products
             product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
                                                                      new_store: @new_store,
+                                                                     vendor: @vendor,
                                                                      taxon_cache: taxon_duplicator.taxons_cache)
             product_duplicator.handle_clone_products
 
@@ -94,6 +95,9 @@ module Spree
         def handle_clone_store
           @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
+
+          @vendor = Spree::Vendor.find_by(name: vendor_params[:name])
+          raise ActiveRecord::RecordNotFound if @vendor.nil?
 
           store = clone_and_update_store @old_store.dup
           unless store.save
