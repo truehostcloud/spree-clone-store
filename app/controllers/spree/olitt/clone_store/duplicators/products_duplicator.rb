@@ -18,7 +18,7 @@ module Spree
           end
 
           def handle_clone_products
-            old_products = @old_store.products.includes(%i[product_properties master taxons variants]).limit(1)
+            old_products = @old_store.products.includes(%i[product_properties master taxons variants])
             old_products.each do |old_product|
               break if errors_are_present?
 
