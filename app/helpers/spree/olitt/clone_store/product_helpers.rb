@@ -2,21 +2,23 @@ module Spree
   module Olitt
     module CloneStore
       module ProductHelpers
-        def duplicate_master_variant(product:, code:)
+        def duplicate_master_variant(product:, vendor_id:, code:)
           master = product.master
           master.dup.tap do |new_master|
             new_master.sku = sku_generator(sku: master.sku, code: code)
             new_master.deleted_at = nil
+            new_master.vendor_id = vendor_id
             new_master.images = master.images.map { |image| duplicate_image(image: image) }
             new_master.price = master.price
             new_master.currency = master.currency
           end
         end
 
-        def duplicate_variant(variant:, code:)
+        def duplicate_variant(variant:, vendor_id:, code:)
           new_variant = variant.dup
           new_variant.sku = sku_generator(sku: variant.sku, code: code)
           new_variant.deleted_at = nil
+          new_variant.vendor_id = vendor_id
           new_variant.option_values = variant.option_values.map { |option_value| option_value }
           new_variant
         end

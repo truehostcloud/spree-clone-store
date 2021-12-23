@@ -6,6 +6,10 @@ module Spree
           params.require(:store).permit(permitted_store_attributes)
         end
 
+        def vendor_params
+          params.require(:vendor).permit([:name])
+        end
+
         def source_id_param
           params.require(:source_store_id)
         end
