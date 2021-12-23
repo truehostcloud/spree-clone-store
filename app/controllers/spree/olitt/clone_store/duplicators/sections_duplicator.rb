@@ -13,7 +13,7 @@ module Spree
           end
 
           def handle_clone_sections
-            sections = @old_store.cms_sections.includes(:cms_page)
+            sections = @old_store.cms_sections.includes(:cms_page, :image_one_attachment, :image_two_attachment, :image_three_attachment)
             sections.each do |section|
               save_section(old_section: section)
               break if errors_are_present?
