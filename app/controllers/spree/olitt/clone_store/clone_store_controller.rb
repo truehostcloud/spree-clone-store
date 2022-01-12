@@ -81,6 +81,14 @@ module Spree
                                                                          linked_resource: linked_resource)
             menu_items_duplicator.handle_clone_menu_items
 
+            # Payment methods
+            payment_methods_duplicator = Duplicators::PaymentMethodsDuplicator.new(new_store: @new_store)
+            payment_methods_duplicator.duplicate
+
+            # Shipping methods
+            shipping_methods_duplicator = Duplicators::ShippingMethodsDuplicator.new(vendor: @vendor)
+            shipping_methods_duplicator.duplicate
+
             return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
 
             finish
