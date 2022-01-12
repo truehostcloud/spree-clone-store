@@ -2,7 +2,7 @@ module Spree
   module Olitt
     module CloneStore
       module Duplicators
-        class ShippingMethodDuplicator < BaseDuplicator
+        class ShippingMethodsDuplicator < BaseDuplicator
           def initialize(vendor)
             @vendor = vendor
           end
