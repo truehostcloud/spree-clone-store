@@ -15,7 +15,7 @@ module Spree
                 payment_method = Spree::PaymentMethod.find(payment_method_id)
                 if payment_method.present?
                   new_payment_method = payment_method.dup
-                  new_payment_method.stores = [@new_store]
+                  new_payment_method.stores = @new_store
                   new_payment_method.save
                 end
               end
