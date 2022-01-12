@@ -119,6 +119,8 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
+          store.customer_support_email = mail_from_address
+          store.new_order_notifications_email = mail_from_address
           store.default = false
           store
         end
