@@ -22,7 +22,7 @@ module Spree
                   new_shipping_method.calculator = duplicate_calculator(shipping_method.calculator)
                   new_shipping_method.name = "#{shipping_method.name} - #{@new_store.name}"
                   new_shipping_method.zones = shipping_method.zones.all
-                  new_shipping_method.created_at = Time.now
+                  new_shipping_method.created_at = Time.zone.now
                   new_shipping_method.updated_at = nil
                   new_shipping_method.save
                 end
@@ -32,7 +32,7 @@ module Spree
           def duplicate_calculator(calculator)
             if calculator.present?
               new_calculator = calculator.dup
-              new_calculator.created_at = Time.now
+              new_calculator.created_at = Time.zone.now
               new_calculator.updated_at = nil
               new_calculator.save
               new_calculator

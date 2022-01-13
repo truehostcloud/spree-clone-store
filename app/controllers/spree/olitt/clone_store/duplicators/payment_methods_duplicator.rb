@@ -17,7 +17,7 @@ module Spree
                 if payment_method.present?
                   new_payment_method = payment_method.dup
                   new_payment_method.stores = [@new_store]
-                  new_payment_method.created_at = Time.now
+                  new_payment_method.created_at = Time.zone.now
                   new_payment_method.updated_at = nil
                   new_payment_method.save
                 end
