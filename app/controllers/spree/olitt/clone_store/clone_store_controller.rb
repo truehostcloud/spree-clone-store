@@ -86,7 +86,7 @@ module Spree
             payment_methods_duplicator.duplicate
 
             # Shipping methods
-            shipping_methods_duplicator = Duplicators::ShippingMethodsDuplicator.new(vendor: @vendor)
+            shipping_methods_duplicator = Duplicators::ShippingMethodsDuplicator.new(vendor: @vendor, new_store: @new_store)
             shipping_methods_duplicator.duplicate
 
             return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
