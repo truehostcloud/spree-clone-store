@@ -101,7 +101,6 @@ module Spree
         end
 
         def handle_create_vendor(email, password, password_confirmation)
-          puts 'Creating vendor with email: ' + email
           @vendor = Spree::Vendor.new(
             name: email,
             notification_email: email,
