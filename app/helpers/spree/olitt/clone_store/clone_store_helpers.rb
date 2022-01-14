@@ -7,7 +7,7 @@ module Spree
         end
 
         def vendor_params
-          params.require(:vendor).permit([:name])
+          params.require(:vendor).permit([:email, :password, :password_confirmation])
         end
 
         def source_id_param

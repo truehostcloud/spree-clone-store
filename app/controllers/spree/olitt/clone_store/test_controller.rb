@@ -96,7 +96,7 @@ module Spree
           @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
-          @vendor = Spree::Vendor.find_by(name: vendor_params[:name])
+          @vendor = Spree::Vendor.find_by(name: vendor_params[:email])
           raise ActiveRecord::RecordNotFound if @vendor.nil?
 
           store = clone_and_update_store @old_store.dup
