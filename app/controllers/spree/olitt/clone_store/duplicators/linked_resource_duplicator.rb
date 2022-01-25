@@ -49,7 +49,7 @@ module Spree
           def assign_page(model:)
             @old_pages = @old_store.cms_pages.group_by(&:id) if @old_pages.nil?
             old_page = @old_pages[model.linked_resource_id].first
-            new_page = @pages_cache[old_page.slug]
+            new_page = @pages_cache[old_page.slug].first
             model.linked_resource_id = new_page.id
             model
           end
