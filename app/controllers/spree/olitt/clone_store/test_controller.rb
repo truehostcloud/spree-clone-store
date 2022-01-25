@@ -92,14 +92,44 @@ module Spree
           raise ActiveRecord::Rollback
         end
 
+        def handle_create_vendor(email, password, password_confirmation)
+          @vendor = Spree::Vendor.new(
+            name: email,
+            notification_email: email,
+            state: 'active'
+          )
+          @vendor.save!
+          # add vendor to user
+          user = Spree::User.find_by(email: email)
+          if user.nil?
+            user = Spree::User.new(
+              email: email,
+              password: password,
+              password_confirmation: password_confirmation
+            )
+            user.save
+            user.vendor_ids = [@vendor.id]
+            user.save!
+          end
+        end
+
+        # Store
         def handle_clone_store
           @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           @vendor = Spree::Vendor.find_by(name: vendor_params[:email])
-          raise ActiveRecord::RecordNotFound if @vendor.nil?
+          if @vendor.nil?
+            handle_create_vendor(
+              vendor_params[:email],
+              vendor_params[:password],
+              vendor_params[:password_confirmation]
+            )
+          end
 
           store = clone_and_update_store @old_store.dup
+          store.logo.attach(@old_store.logo.blob)
+
           unless store.save
             render_error_payload(store.errors)
             return false
@@ -116,6 +146,8 @@ module Spree
           store.url = url
           store.code = code
           store.mail_from_address = mail_from_address
+          store.customer_support_email = mail_from_address
+          store.new_order_notifications_email = mail_from_address
           store.default = false
           store
         end
