@@ -11,7 +11,8 @@ module Spree
 
           def duplicate
             # Get clone shipping methods from environment
-            if ENV['CLONE_SHIPPING_METHODS_IDS'].present?
+            vendor_shipping_methods = @vendor.shipping_methods.all
+            if ENV['CLONE_SHIPPING_METHODS_IDS'].present? && (vendor_shipping_methods.count == 0)
               shipping_methods_ids = ENV['CLONE_SHIPPING_METHODS_IDS'].split(',')
               shipping_methods_ids.each do |shipping_method_id|
                 shipping_method = Spree::ShippingMethod.find(shipping_method_id)
