@@ -18,7 +18,7 @@ module Spree
             menus.map do |menu|
               new_menu = menu.dup
               new_menu.store = @new_store
-              save_model(model: new_menu)
+              save_model(model_instance: new_menu)
               @root_menu_items[menu.root] = new_menu.root
               cache_menu(new_menu: new_menu)
             end

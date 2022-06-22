@@ -18,7 +18,7 @@ module Spree
             pages.each do |old_page|
               new_page = old_page.dup
               new_page.store = @new_store
-              save_model(model: new_page)
+              save_model(model_instance: new_page)
               break if errors_are_present?
 
               @pages_cache[new_page.slug] = [new_page]

@@ -33,7 +33,7 @@ module Spree
             new_menu_item.parent = @old_to_new_menu_item_map[old_menu_item.parent]
             new_menu_item.menu = get_new_menu(old_menu: old_menu_item.menu)
             new_menu_item = @linked_resource.assign_linked_resource(model: new_menu_item) unless new_menu_item.linked_resource_id.nil?
-            save_model(model: new_menu_item)
+            save_model(model_instance: new_menu_item)
             return if errors_are_present?
 
             @old_to_new_menu_item_map[old_menu_item] = new_menu_item
