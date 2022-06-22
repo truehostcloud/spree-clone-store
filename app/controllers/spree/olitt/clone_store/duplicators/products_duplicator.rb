@@ -35,7 +35,7 @@ module Spree
             new_product.variants = get_new_variants(old_product: old_product)
             new_product.master = duplicate_master_variant(product: old_product, vendor_id: @vendor.id, code: @new_store.code)
             new_product.product_properties = reset_properties(product: old_product)
-            save_model(model: new_product)
+            save_model(model_instance: new_product)
             return if errors_are_present?
 
             @products_cache[old_product.slug] = [new_product]

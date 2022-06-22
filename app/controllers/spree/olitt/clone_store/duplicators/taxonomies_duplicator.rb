@@ -18,7 +18,7 @@ module Spree
             taxonomies.each do |old_taxonomy|
               new_taxonomy = old_taxonomy.dup
               new_taxonomy.store = @new_store
-              save_model(model: new_taxonomy)
+              save_model(model_instance: new_taxonomy)
               break if errors_are_present?
 
               @root_taxons[new_taxonomy.root.permalink] = [new_taxonomy.root]

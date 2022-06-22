@@ -36,7 +36,7 @@ module Spree
             attributes = new_taxon.attributes
             attributes = attributes.except('lft', 'rgt', 'depth')
             new_taxon = Spree::Taxon.new attributes
-            save_model(model: new_taxon)
+            save_model(model_instance: new_taxon)
             return if errors_are_present?
 
             @taxons_cache[new_taxon.permalink] = [new_taxon]

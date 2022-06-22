@@ -25,7 +25,7 @@ module Spree
                   new_shipping_method.zones = shipping_method.zones.all
                   new_shipping_method.created_at = Time.zone.now
                   new_shipping_method.updated_at = nil
-                  new_shipping_method.save
+                  save_model(model_instance: new_shipping_method)
                 end
               end
             end
