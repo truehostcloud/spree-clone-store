@@ -14,12 +14,7 @@ module Spree
           end
 
           def save_model(model_instance:)
-            unless model_instance.save
-              model_instance_errors = model_instance.errors
-              model_name = model_instance.class.name.demodulize.underscore
-              model_instance_errors["model_name"] = model_name
-              @errors << model_instance_errors
-            end
+            @errors << model_instance.errors unless model_instance.save
             model_instance
           end
         end
