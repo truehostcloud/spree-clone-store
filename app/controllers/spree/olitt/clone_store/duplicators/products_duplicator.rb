@@ -42,12 +42,9 @@ module Spree
           end
 
           def get_new_taxons(old_product:)
-            old_product.taxons.map do |old_taxon|
-              taxons = @taxon_cache[old_taxon.permalink]
-              return false if taxons.nil?
-
-              taxons.first
-            end
+            old_product.taxons
+                       .filter { |old_taxon| @taxon_cache[old_taxon.permalink].present? }
+                       .map { |old_taxon| @taxon_cache[old_taxon.permalink].first }
           end
 
           def get_new_variants(old_product:)
