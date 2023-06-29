@@ -111,24 +111,21 @@ module Spree
         end
 
         def handle_create_vendor(email, password, password_confirmation)
-          @vendor = Spree::Vendor.new(
+          user = Spree::User.find_by(email: email) || Spree::User.create!(
+            email: email,
+            password: password,
+            password_confirmation: password_confirmation
+          )
+
+          @vendor = Spree::Vendor.create!(
             name: email,
             notification_email: email,
             state: 'active'
           )
-          @vendor.save!
+
           # add vendor to user
-          user = Spree::User.find_by(email: email)
-          if user.nil?
-            user = Spree::User.new(
-              email: email,
-              password: password,
-              password_confirmation: password_confirmation,
-            )
-            user.save
           user.vendor_ids = [@vendor.id]
           user.save!
-          end
         end
 
         # Store
