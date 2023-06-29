@@ -6,6 +6,7 @@ require_relative 'duplicators/products_duplicator'
 require_relative 'duplicators/sections_duplicator'
 require_relative 'duplicators/taxonomies_duplicator'
 require_relative 'duplicators/taxons_duplicator'
+require_relative 'duplicators/stock_items_duplicator'
 
 module Spree
   module Olitt
@@ -56,6 +57,15 @@ module Spree
             return render_error(duplicator: product_duplicator) if product_duplicator.errors_are_present?
 
             linked_resource.products_cache = product_duplicator.products_cache
+
+            # Stock Items
+            stock_items_duplicator = Duplicators::StockItemsDuplicator.new(old_store: @old_store,
+                                                                           new_store: @new_store,
+                                                                           vendor: @vendor,
+                                                                           products_cache: product_duplicator.products_cache)
+            stock_items_duplicator.handle_clone_stock_items
+
+            return render_error(duplicator: stock_items_duplicator) if stock_items_duplicator.errors_are_present?
 
             # Sections
             section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
