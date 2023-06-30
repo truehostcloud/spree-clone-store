@@ -14,7 +14,7 @@ module Spree
           def handle_clone_stock_items
             @old_store.products.each do |old_product|
               new_product = @products_cache[old_product.slug].first
-              new_product.variants.each do |new_variant|
+              new_product.variants_including_master.each do |new_variant|
                 @vendor.stock_locations.each do |new_stock_location|
                   new_stock_item = new_stock_location.stock_item_or_create(new_variant)
                   new_stock_item.update(count_on_hand: old_product.total_on_hand)
