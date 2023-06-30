@@ -1,7 +1,7 @@
 module Spree
   module Olitt
     module CloneStore
-      VERSION = '1.1.7'.freeze
+      VERSION = '1.1.8'.freeze
 
       def version
         Gem::Version.new VERSION
