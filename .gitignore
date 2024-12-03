@@ -47,3 +47,6 @@ Gemfile.lock
 Dockerfile
 docker-compose.yml
 bin/install
+
+# ignore intellij files
+.idea

@@ -1,3 +1,5 @@
+require_relative 'configuration'
+
 module Spree
   module Olitt
     module CloneStore
