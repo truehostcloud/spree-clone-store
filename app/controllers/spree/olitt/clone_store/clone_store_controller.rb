@@ -136,7 +136,7 @@ module Spree
           end
 
           store = clone_and_update_store @old_store.dup
-          store.logo.attach(@old_store.logo.blob) if @old_store.logo.attached?
+          store.logo.attach(@old_store.logo.blob) if @old_store&.logo&.attached?
 
           unless store.save
             render_error_payload(store.errors)
