@@ -32,8 +32,12 @@ module Spree
 
           def assign_taxon(model:)
             @old_taxons = @old_store.taxons.group_by(&:id) if @old_taxons.nil?
-            old_taxon = @old_taxons[model.linked_resource_id].first
-            new_taxon = @taxons_cache[old_taxon.permalink].first
+            old_taxon = @old_taxons[model.linked_resource_id]&.first
+            return model unless old_taxon
+
+            new_taxon = @taxons_cache[old_taxon.permalink]&.first
+            return model unless new_taxon
+
             model.linked_resource_id = new_taxon.id
             model
           end
