@@ -13,7 +13,7 @@ module Spree
       class CloneStoreController < Spree::Api::V2::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
-        def clone
+        def clone_store
           ActiveRecord::Base.transaction do
             return unless handle_clone_store
 
@@ -21,7 +21,8 @@ module Spree
 
             # Taxonomies
             taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                                          new_store: @new_store)
+                                                                          new_store: @new_store,
+                                                                          vendor: @vendor)
             taxonomies_duplicator.handle_clone_taxonomies
 
             return render_error(duplicator: taxonomies_duplicator) if taxonomies_duplicator.errors_are_present?
@@ -29,6 +30,7 @@ module Spree
             # Taxons
             taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
                                                                  new_store: @new_store,
+                                                                 vendor: @vendor,
                                                                  taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
                                                                  root_taxons: taxonomies_duplicator.root_taxons)
             taxon_duplicator.handle_clone_taxons
@@ -39,7 +41,9 @@ module Spree
 
             # Pages
             page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
-                                                               new_store: @new_store)
+                                                               new_store: @new_store,
+                                                                vendor: @vendor,
+                                                               )
             page_duplicator.handle_clone_pages
 
             return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
@@ -60,6 +64,7 @@ module Spree
             # Sections
             section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
                                                                      new_store: @new_store,
+                                                                     vendor: @vendor,
                                                                      pages_cache: page_duplicator.pages_cache,
                                                                      linked_resource: linked_resource)
             section_duplicator.handle_clone_sections
@@ -82,7 +87,7 @@ module Spree
             menu_items_duplicator.handle_clone_menu_items
 
             # Payment methods
-            payment_methods_duplicator = Duplicators::PaymentMethodsDuplicator.new(new_store: @new_store)
+            payment_methods_duplicator = Duplicators::PaymentMethodsDuplicator.new(new_store: @new_store, vendor: @vendor)
             payment_methods_duplicator.duplicate
 
             # Shipping methods
@@ -116,8 +121,8 @@ module Spree
               password_confirmation: password_confirmation,
             )
             user.save
-          user.vendor_ids = [@vendor.id]
-          user.save!
+            user.vendor_ids = [@vendor.id]
+            user.save!
           end
         end
 
@@ -157,6 +162,7 @@ module Spree
           store.customer_support_email = mail_from_address
           store.new_order_notifications_email = mail_from_address
           store.default = false
+          store.vendor = @vendor
           store
         end
 

@@ -3,9 +3,10 @@ module Spree
     module CloneStore
       module Duplicators
         class PaymentMethodsDuplicator < BaseDuplicator
-          def initialize(new_store:)
+          def initialize(new_store:, vendor:)
             super()
             @new_store = new_store
+            @vendor = vendor
           end
 
           def duplicate
@@ -17,6 +18,7 @@ module Spree
                 if payment_method.present?
                   new_payment_method = payment_method.dup
                   new_payment_method.stores = [@new_store]
+                  new_payment_method.vendor = @vendor
                   new_payment_method.created_at = Time.zone.now
                   new_payment_method.updated_at = nil
                   new_payment_method.save

@@ -5,7 +5,7 @@ module Spree
         class TaxonsDuplicator < BaseDuplicator
           attr_reader :taxons_cache
 
-          def initialize(old_store:, new_store:, taxonomies_cache:, root_taxons:)
+          def initialize(old_store:, new_store:, vendor:, taxonomies_cache:, root_taxons:)
             super()
             @old_store = old_store
             @new_store = new_store
@@ -16,6 +16,7 @@ module Spree
             @depth = 1
 
             @old_taxons_by_depth = @old_store.taxons.includes(%i[taxonomy parent]).group_by(&:depth)
+            @vendor = vendor
           end
 
           def handle_clone_taxons
@@ -33,6 +34,7 @@ module Spree
             new_taxon = old_taxon.dup
             new_taxon.taxonomy = get_new_taxonomy(old_taxon: old_taxon)
             new_taxon.parent = get_new_parent_taxon(old_taxon: old_taxon)
+            new_taxon.vendor = @vendor
             attributes = new_taxon.attributes
             attributes = attributes.except('lft', 'rgt', 'depth')
             new_taxon = Spree::Taxon.new attributes

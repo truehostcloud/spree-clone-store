@@ -5,12 +5,13 @@ module Spree
         class TaxonomiesDuplicator < BaseDuplicator
           attr_reader :root_taxons, :taxonomies_cache
 
-          def initialize(old_store:, new_store:)
+          def initialize(old_store:, new_store:, vendor:)
             super()
             @old_store = old_store
             @new_store = new_store
             @root_taxons = {}
             @taxonomies_cache = {}
+            @vendor = vendor
           end
 
           def handle_clone_taxonomies
@@ -18,6 +19,7 @@ module Spree
             taxonomies.each do |old_taxonomy|
               new_taxonomy = old_taxonomy.dup
               new_taxonomy.store = @new_store
+              new_taxonomy.vendor = @vendor
               save_model(model_instance: new_taxonomy)
               break if errors_are_present?
 
