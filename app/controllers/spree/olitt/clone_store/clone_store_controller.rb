@@ -141,6 +141,9 @@ module Spree
           end
 
           store = clone_and_update_store @old_store.dup
+          store.build_logo
+          store.build_mailer_logo
+          store.build_favicon_image
           store.logo.attach(@old_store.logo.attachment.blob) if @old_store&.logo&.attachment&.attached?
           store.mailer_logo.attach(@old_store.mailer_logo.attachment.blob) if @old_store&.mailer_logo&.attachment&.attached?
           store.favicon_image.attach(@old_store.favicon_image.attachment.blob) if @old_store&.favicon_image&.attachment&.attached?
