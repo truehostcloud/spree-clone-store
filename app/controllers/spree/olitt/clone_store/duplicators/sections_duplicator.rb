@@ -34,9 +34,9 @@ module Spree
             new_section.build_image_one unless old_section.image_one.nil?
             new_section.build_image_two unless old_section.image_two.nil?
             new_section.build_image_three unless old_section.image_three.nil?
-            new_section.image_one.attach(old_section.image_one.attachment.blob) unless old_section.image_one.nil?
-            new_section.image_two.attach(old_section.image_two.attachment.blob) unless old_section.image_two.nil?
-            new_section.image_three.attach(old_section.image_three.attachment.blob) unless old_section.image_three.nil?
+            new_section.image_one.attachment.attach(old_section.image_one.attachment.blob) unless old_section.image_one.nil?
+            new_section.image_two.attachment.attach(old_section.image_two.attachment.blob) unless old_section.image_two.nil?
+            new_section.image_three.attachment.attach(old_section.image_three.attachment.blob) unless old_section.image_three.nil?
             new_section
           end
         end
