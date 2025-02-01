@@ -191,6 +191,9 @@ module Spree
 
         def finish
           @new_store.reload
+          @new_store.logo = nil
+          @new_store.mailer_logo = nil
+          @new_store.favicon_image = nil
           render_serialized_payload(201) { serialize_resource(@new_store) }
         end
       end
