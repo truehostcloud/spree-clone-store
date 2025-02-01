@@ -184,6 +184,7 @@ module Spree
             store.build_favicon_image
             store.favicon_image.attachment.attach(@old_store.favicon_image.attachment.blob)
           end
+          store.save
         end
 
         # Finish Lifecycle
