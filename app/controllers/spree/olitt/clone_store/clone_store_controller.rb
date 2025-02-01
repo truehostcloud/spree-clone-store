@@ -173,15 +173,12 @@ module Spree
         def attach_store_images
           store = @new_store
           if @old_store&.logo&.attachment&.attached?
-            store.build_logo
             store.logo.attachment.attach(@old_store.logo.attachment.blob)
           end
           if @old_store&.mailer_logo&.attachment&.attached?
-            store.build_mailer_logo
             store.mailer_logo.attachment.attach(@old_store.mailer_logo.attachment.blob)
           end
           if @old_store&.favicon_image&.attachment&.attached?
-            store.build_favicon_image
             store.favicon_image.attachment.attach(@old_store.favicon_image.attachment.blob)
           end
           store.save
