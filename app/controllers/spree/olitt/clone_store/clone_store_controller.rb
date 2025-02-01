@@ -191,6 +191,9 @@ module Spree
 
         def finish
           @new_store.reload
+          @new_store.logo = nil
+          @new_store.mailer_logo = nil
+          @new_store.favicon_image = nil
           render json: { id: @new_store.id }, status: 201, content_type: content_type
         end
       end
