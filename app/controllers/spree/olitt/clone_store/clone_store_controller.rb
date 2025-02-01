@@ -189,6 +189,7 @@ module Spree
         # Finish Lifecycle
 
         def finish
+          @new_store.reload
           render_serialized_payload(201) { serialize_resource(@new_store) }
         end
       end
