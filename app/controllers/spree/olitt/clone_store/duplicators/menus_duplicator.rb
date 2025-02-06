@@ -5,10 +5,11 @@ module Spree
         class MenusDuplicator < BaseDuplicator
           attr_reader :root_menu_items, :menus_cache
 
-          def initialize(old_store:, new_store:)
+          def initialize(old_store:, new_store:, vendor:)
             super()
             @old_store = old_store
             @new_store = new_store
+            @vendor = vendor
             @menus_cache = {}
             @root_menu_items = {}
           end
@@ -18,6 +19,7 @@ module Spree
             menus.map do |menu|
               new_menu = menu.dup
               new_menu.store = @new_store
+              new_menu.vendor = @vendor
               save_model(model_instance: new_menu)
               @root_menu_items[menu.root] = new_menu.root
               cache_menu(new_menu: new_menu)

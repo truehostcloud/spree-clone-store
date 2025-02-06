@@ -73,7 +73,8 @@ module Spree
 
             # Menus
             menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                                new_store: @new_store)
+                                                                new_store: @new_store,
+                                                                vendor: @vendor)
             menus_duplicator.handle_clone_menus
 
             return render_error(duplicator: menus_duplicator) if menus_duplicator.errors_are_present?
@@ -81,6 +82,7 @@ module Spree
             # Menu Items
             menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
                                                                          new_store: @new_store,
+                                                                         vendor: @vendor,
                                                                          new_menus_cache: menus_duplicator.menus_cache,
                                                                          root_menu_items: menus_duplicator.root_menu_items,
                                                                          linked_resource: linked_resource)
