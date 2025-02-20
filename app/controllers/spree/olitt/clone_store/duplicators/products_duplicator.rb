@@ -42,7 +42,7 @@ module Spree
           end
 
           def get_new_taxons(old_product:)
-            old_product.taxons.map { |old_taxon| @taxon_cache[old_taxon.permalink].first }
+            old_product.taxons.map { |old_taxon| @taxon_cache[old_taxon.permalink]&.first }.compact
           end
 
           def get_new_variants(old_product:)
