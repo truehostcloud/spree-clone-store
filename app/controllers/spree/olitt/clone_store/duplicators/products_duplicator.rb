@@ -13,12 +13,13 @@ module Spree
             @new_store = new_store
             @vendor = vendor
             @taxon_cache = taxon_cache
+            @limit = ENV['PRODUCTS_CLONE_LIMIT']&.to_i || 20
 
             @products_cache = {}
           end
 
           def handle_clone_products
-            old_products = @old_store.products.includes(:product_properties, :taxons, :variants, master: %i[images default_price])
+            old_products = @old_store.products.includes(:product_properties, :taxons, :variants, master: %i[images default_price]).limit(@limit)
             old_products.each do |old_product|
               break if errors_are_present?
 
