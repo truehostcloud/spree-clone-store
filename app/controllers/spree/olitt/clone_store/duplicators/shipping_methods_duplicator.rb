@@ -18,7 +18,7 @@ module Spree
                 shipping_method = Spree::ShippingMethod.find(shipping_method_id)
                 if shipping_method.present?
                   new_shipping_method = shipping_method.dup
-                  new_shipping_method.vendor = @vendor
+                  assign_vendor(model_instance: new_shipping_method, vendor: @vendor)
                   new_shipping_method.shipping_categories = shipping_method.shipping_categories.all
                   new_shipping_method.calculator = duplicate_calculator(shipping_method.calculator)
                   new_shipping_method.name = "#{shipping_method.name} - #{@new_store.name}"

@@ -15,11 +15,13 @@ module Spree
           end
 
           def handle_clone_pages
+            return unless @old_store.respond_to?(:cms_pages)
+
             pages = @old_store.cms_pages
             pages.each do |old_page|
               new_page = old_page.dup
               new_page.store = @new_store
-              new_page.vendor = @vendor
+              assign_vendor(model_instance: new_page, vendor: @vendor)
               save_model(model_instance: new_page)
               break if errors_are_present?
 

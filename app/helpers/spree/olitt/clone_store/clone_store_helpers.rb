@@ -2,20 +2,29 @@ module Spree
   module Olitt
     module CloneStore
       module CloneStoreHelpers
+        def clone_store_payload
+          raw_payload = params[:clone_store]
+          return params unless raw_payload.present?
+
+          raw_payload.respond_to?(:permit) ? raw_payload : ActionController::Parameters.new(raw_payload)
+        end
+
         def store_params
-          params.require(:store).permit(permitted_store_attributes)
+          clone_store_payload.require(:store).permit(:name, :url, :code, :mail_from_address)
         end
 
         def vendor_params
-          params.require(:vendor).permit([:email, :password, :password_confirmation])
+          clone_store_payload.require(:vendor).permit([:email, :password, :password_confirmation])
         end
 
         def source_id_param
-          params.require(:source_store_id)
+          clone_store_payload.require(:source_store_id)
         end
 
         def resource_serializer
           Spree::Api::V2::Platform::StoreSerializer
+        rescue NameError
+          Spree::V2::Platform::StoreSerializer
         end
 
         def required_store_params
