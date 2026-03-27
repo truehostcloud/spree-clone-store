@@ -1,3 +1,5 @@
+require 'json'
+
 require_relative 'duplicators/linked_resource_duplicator'
 require_relative 'duplicators/menu_items_duplicator'
 require_relative 'duplicators/menus_duplicator'
@@ -10,7 +12,7 @@ require_relative 'duplicators/taxons_duplicator'
 module Spree
   module Olitt
     module CloneStore
-      class CloneStoreController < Spree::Api::V2::BaseController
+      class CloneStoreController < Spree::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
         def clone_store
@@ -105,29 +107,16 @@ module Spree
         end
 
         def render_error(duplicator:)
-          render json: duplicator.errors
+          render_error_payload(duplicator.errors)
           raise ActiveRecord::Rollback
         end
 
         def handle_create_vendor(email, password, password_confirmation)
-          @vendor = Spree::Vendor.new(
-            name: email,
-            notification_email: email,
-            state: 'active'
-          )
-          @vendor.save!
-          # add vendor to user
-          user = Spree::User.find_by(email: email)
-          if user.nil?
-            user = Spree::User.new(
-              email: email,
-              password: password,
-              password_confirmation: password_confirmation,
-              )
-            user.save
-            user.vendor_ids = [@vendor.id]
-            user.save!
-          end
+          user_email = email.to_s.strip.downcase
+          @vendor = find_or_create_vendor(user_email)
+          user = find_or_create_user(user_email, password, password_confirmation)
+          assign_vendor_role(user, @vendor)
+          activate_vendor(@vendor)
         end
 
         # Store
@@ -135,7 +124,8 @@ module Spree
           @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
-          @vendor = Spree::Vendor.find_by(name: vendor_params[:email])
+          @vendor = Spree::Vendor.find_by(notification_email: vendor_params[:email].to_s.strip.downcase) ||
+                    Spree::Vendor.find_by(name: vendor_params[:email].to_s.strip.downcase)
           if @vendor.nil?
             handle_create_vendor(
               vendor_params[:email],
@@ -165,7 +155,7 @@ module Spree
           store.customer_support_email = mail_from_address
           store.new_order_notifications_email = mail_from_address
           store.default = false
-          store.vendor = @vendor
+          store.vendor_id = @vendor.id
           store.logo = nil
           store.mailer_logo = nil
           store.favicon_image = nil
@@ -193,7 +183,80 @@ module Spree
 
         def finish
           @new_store.reload
-          render_serialized_payload(201) { serialize_resource(@new_store) }
+          render json: serialize_store(@new_store), status: :created
+        end
+
+        private
+
+        def find_or_create_vendor(email)
+          ::Spree::Vendor.find_by(notification_email: email) ||
+            ::Spree::Vendor.find_by(name: email) ||
+            ::Spree::Vendor.create!(
+              name: email,
+              notification_email: email,
+              contact_person_email: email,
+              billing_email: email
+            )
+        end
+
+        def find_or_create_user(email, password, password_confirmation)
+          user = Spree.user_class.find_or_initialize_by(email: email)
+          return user if user.persisted?
+
+          user.password = password
+          user.password_confirmation = password_confirmation.presence || password
+          user.save!
+          user
+        end
+
+        def assign_vendor_role(user, vendor)
+          vendor_role_name = defined?(Spree::Vendor::DEFAULT_VENDOR_ROLE) ? Spree::Vendor::DEFAULT_VENDOR_ROLE : 'vendor'
+          vendor_role = Spree::Role.find_or_create_by!(name: vendor_role_name)
+
+          Spree::RoleUser.find_or_create_by!(
+            user: user,
+            role: vendor_role,
+            resource: vendor
+          )
+        end
+
+        def activate_vendor(vendor)
+          return if %w[active approved].include?(vendor.state)
+
+          vendor.start_onboarding! if vendor.respond_to?(:start_onboarding!) && vendor.state == 'invited'
+          vendor.approve! if vendor.respond_to?(:approve!) && !%w[active approved].include?(vendor.state)
+        end
+
+        def render_error_payload(errors)
+          render json: { errors: normalize_errors(errors) }, status: :unprocessable_entity
+        end
+
+        def normalize_errors(errors)
+          Array(errors).flatten.compact.flat_map do |error|
+            next error.full_messages if error.respond_to?(:full_messages)
+
+            error.to_s
+          end
+        end
+
+        def serialize_store(store)
+          serializer = resource_serializer.new(store)
+          return serializer.serializable_hash if serializer.respond_to?(:serializable_hash)
+
+          serializer
+        rescue StandardError
+          {
+            data: {
+              id: store.id.to_s,
+              type: 'store',
+              attributes: {
+                name: store.name,
+                url: store.url,
+                code: store.code,
+                mail_from_address: store.mail_from_address
+              }
+            }
+          }
         end
       end
     end

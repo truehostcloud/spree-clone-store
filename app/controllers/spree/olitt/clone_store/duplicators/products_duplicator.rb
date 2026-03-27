@@ -31,6 +31,7 @@ module Spree
             new_product = old_product.dup
             new_product.stores = [@new_store]
             new_product = reset_timestamps(product: new_product)
+            new_product.slug = build_cloned_slug(old_product: old_product)
             new_product.taxons = get_new_taxons(old_product: old_product)
             new_product.vendor_id = @vendor.id
             new_product.variants = get_new_variants(old_product: old_product)
@@ -55,6 +56,12 @@ module Spree
             product.deleted_at = nil
             product.updated_at = nil
             product
+          end
+
+          def build_cloned_slug(old_product:)
+            return @new_store.code if old_product.slug.blank?
+
+            "#{old_product.slug}-#{@new_store.code}"
           end
         end
       end

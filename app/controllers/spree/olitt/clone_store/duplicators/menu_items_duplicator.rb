@@ -15,7 +15,11 @@ module Spree
 
             @depth = 1
 
-            @old_menu_items_by_depth = @old_store.menu_items.includes(%i[parent menu]).group_by(&:depth)
+            @old_menu_items_by_depth = if @old_store.respond_to?(:menu_items)
+                                         @old_store.menu_items.includes(%i[parent menu]).group_by(&:depth)
+                                       else
+                                         {}
+                                       end
           end
 
           def handle_clone_menu_items
@@ -33,7 +37,7 @@ module Spree
             new_menu_item = old_menu_item.dup
             new_menu_item.parent = @old_to_new_menu_item_map[old_menu_item.parent]
             new_menu_item.menu = get_new_menu(old_menu: old_menu_item.menu)
-            new_menu_item.vendor = @vendor
+            assign_vendor(model_instance: new_menu_item, vendor: @vendor)
             new_menu_item = @linked_resource.assign_linked_resource(model: new_menu_item) unless new_menu_item.linked_resource_id.nil?
             save_model(model_instance: new_menu_item)
             return if errors_are_present?
