@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
   s.email     = ['info@olitt.com']
   s.homepage  = 'https://github.com/truehostcloud/spree-clone-store'
   s.license = 'MIT'
+  s.metadata = { 'rubygems_mfa_required' => 'true' }
 
   s.files = `git ls-files`.split("\n").reject { |f| f.match(/^spec/) && !f.match(%r{^spec/fixtures}) }
   s.require_path = 'lib'

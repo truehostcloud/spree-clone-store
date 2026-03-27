@@ -52,7 +52,7 @@ module Spree
           end
 
           def superuser_with_global_admin_role?(user)
-            return false unless user.present?
+            return false if user.blank?
 
             user.role_users.joins(:role).exists?(
               spree_roles: { name: Spree::Role::ADMIN_ROLE },

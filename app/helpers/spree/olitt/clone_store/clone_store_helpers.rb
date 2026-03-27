@@ -4,7 +4,7 @@ module Spree
       module CloneStoreHelpers
         def clone_store_payload
           raw_payload = params[:clone_store]
-          return params unless raw_payload.present?
+          return params if raw_payload.blank?
 
           raw_payload.respond_to?(:permit) ? raw_payload : ActionController::Parameters.new(raw_payload)
         end
