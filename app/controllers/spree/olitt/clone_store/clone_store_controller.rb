@@ -15,8 +15,6 @@ module Spree
       class CloneStoreController < Spree::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
-        # skip_before_action :verify_authenticity_token, only: :clone_store, raise: false
-
         def clone_store
           ActiveRecord::Base.transaction do
             return unless handle_clone_store
