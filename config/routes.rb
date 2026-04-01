@@ -1,4 +1,13 @@
 Spree::Core::Engine.add_routes do
+  namespace :api do
+    namespace :v2 do
+      namespace :platform do
+        post '/clone-store', to: 'clone_stores#create'
+        get '/clone-store/:job_id', to: 'clone_stores#show'
+      end
+    end
+  end
+
   post '/admin/clone_store', controller: 'olitt/clone_store/clone_store', action: 'clone_store'
 
   if Rails.env.development?
