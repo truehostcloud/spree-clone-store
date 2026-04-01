@@ -14,6 +14,8 @@ module Spree
           end
 
           def handle_clone_sections
+            return unless @old_store.respond_to?(:cms_sections)
+
             sections = @old_store.cms_sections.includes(:cms_page, :image_one, :image_two, :image_three)
             sections.each do |section|
               save_section(old_section: section)
@@ -23,7 +25,7 @@ module Spree
 
           def save_section(old_section:)
             new_section = old_section.dup
-            new_section.vendor = @vendor
+            assign_vendor(model_instance: new_section, vendor: @vendor)
             new_section.cms_page = @pages_cache[old_section.cms_page.slug].first
             new_section = duplicate_images(new_section: new_section, old_section: old_section)
             new_section = @linked_resource.assign_linked_resource(model: new_section) unless new_section.linked_resource_id.nil?

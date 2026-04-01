@@ -34,7 +34,7 @@ module Spree
             new_taxon = old_taxon.dup
             new_taxon.taxonomy = get_new_taxonomy(old_taxon: old_taxon)
             new_taxon.parent = get_new_parent_taxon(old_taxon: old_taxon)
-            new_taxon.vendor = @vendor
+            assign_vendor(model_instance: new_taxon, vendor: @vendor)
             attributes = new_taxon.attributes
             attributes = attributes.except('lft', 'rgt', 'depth')
             new_taxon = Spree::Taxon.new attributes

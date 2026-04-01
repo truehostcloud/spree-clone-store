@@ -3,7 +3,7 @@ require 'json'
 module Spree
   module Olitt
     module CloneStore
-      class CloneStoreController < Spree::Api::V2::BaseController
+      class CloneStoreController < Spree::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
         attr_reader :old_store, :new_store
@@ -25,29 +25,16 @@ module Spree
         end
 
         def render_error(duplicator:)
-          render json: duplicator.errors
+          render_error_payload(duplicator.errors)
           raise ActiveRecord::Rollback
         end
 
         def handle_create_vendor(email, password, password_confirmation)
-          @vendor = Spree::Vendor.new(
-            name: email,
-            notification_email: email,
-            state: 'active'
-          )
-          @vendor.save!
-          # add vendor to user
-          user = Spree::User.find_by(email: email)
-          if user.nil?
-            user = Spree::User.new(
-              email: email,
-              password: password,
-              password_confirmation: password_confirmation,
-              )
-            user.save
-            user.vendor_ids = [@vendor.id]
-            user.save!
-          end
+          user_email = email.to_s.strip.downcase
+          @vendor = find_or_create_vendor(user_email)
+          user = find_or_create_user(user_email, password, password_confirmation)
+          assign_vendor_role(user, @vendor)
+          activate_vendor(@vendor)
         end
 
         def handle_clone_store
@@ -86,7 +73,7 @@ module Spree
           store.customer_support_email = mail_from_address
           store.new_order_notifications_email = mail_from_address
           store.default = false
-          store.vendor = @vendor
+          store.vendor_id = @vendor.id
           store.logo = nil
           store.mailer_logo = nil
           store.favicon_image = nil
