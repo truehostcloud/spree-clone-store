@@ -1,3 +1,14 @@
+require_relative 'duplicators/linked_resource_duplicator'
+require_relative 'duplicators/menu_items_duplicator'
+require_relative 'duplicators/menus_duplicator'
+require_relative 'duplicators/pages_duplicator'
+require_relative 'duplicators/payment_methods_duplicator'
+require_relative 'duplicators/products_duplicator'
+require_relative 'duplicators/sections_duplicator'
+require_relative 'duplicators/shipping_methods_duplicator'
+require_relative 'duplicators/taxonomies_duplicator'
+require_relative 'duplicators/taxons_duplicator'
+
 module Spree
   module Olitt
     module CloneStore
@@ -13,7 +24,6 @@ module Spree
 
         def call
           ActiveRecord::Base.transaction do
-            advance_step('taxonomies')
             linked_resource = Duplicators::LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
 
             taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(
@@ -24,7 +34,6 @@ module Spree
             taxonomies_duplicator.handle_clone_taxonomies
             rollback_with_errors!(taxonomies_duplicator.errors) if taxonomies_duplicator.errors_are_present?
 
-            advance_step('taxons')
             taxon_duplicator = Duplicators::TaxonsDuplicator.new(
               old_store: @old_store,
               new_store: @new_store,
@@ -36,7 +45,6 @@ module Spree
             rollback_with_errors!(taxon_duplicator.errors) if taxon_duplicator.errors_are_present?
             linked_resource.taxons_cache = taxon_duplicator.taxons_cache
 
-            advance_step('pages')
             page_duplicator = Duplicators::PagesDuplicator.new(
               old_store: @old_store,
               new_store: @new_store,
@@ -46,7 +54,6 @@ module Spree
             rollback_with_errors!(page_duplicator.errors) if page_duplicator.errors_are_present?
             linked_resource.pages_cache = page_duplicator.pages_cache
 
-            advance_step('products')
             product_duplicator = Duplicators::ProductsDuplicator.new(
               old_store: @old_store,
               new_store: @new_store,
@@ -57,7 +64,6 @@ module Spree
             rollback_with_errors!(product_duplicator.errors) if product_duplicator.errors_are_present?
             linked_resource.products_cache = product_duplicator.products_cache
 
-            advance_step('sections')
             section_duplicator = Duplicators::SectionsDuplicator.new(
               old_store: @old_store,
               new_store: @new_store,
@@ -68,7 +74,6 @@ module Spree
             section_duplicator.handle_clone_sections
             rollback_with_errors!(section_duplicator.errors) if section_duplicator.errors_are_present?
 
-            advance_step('menus')
             menus_duplicator = Duplicators::MenusDuplicator.new(
               old_store: @old_store,
               new_store: @new_store,
@@ -77,7 +82,6 @@ module Spree
             menus_duplicator.handle_clone_menus
             rollback_with_errors!(menus_duplicator.errors) if menus_duplicator.errors_are_present?
 
-            advance_step('menu_items')
             menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(
               old_store: @old_store,
               new_store: @new_store,
@@ -89,13 +93,9 @@ module Spree
             menu_items_duplicator.handle_clone_menu_items
             rollback_with_errors!(menu_items_duplicator.errors) if menu_items_duplicator.errors_are_present?
 
-            advance_step('payment_methods')
             Duplicators::PaymentMethodsDuplicator.new(new_store: @new_store, vendor: @vendor).duplicate
-
-            advance_step('shipping_methods')
             Duplicators::ShippingMethodsDuplicator.new(vendor: @vendor, new_store: @new_store).duplicate
 
-            advance_step('images')
             attach_store_images
           end
 
@@ -124,10 +124,6 @@ module Spree
         def rollback_with_errors!(duplicator_errors)
           @errors = normalize_errors(duplicator_errors)
           raise ActiveRecord::Rollback
-        end
-
-        def advance_step(_step)
-          nil
         end
 
         def normalize_errors(raw_errors)

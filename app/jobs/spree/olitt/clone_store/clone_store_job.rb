@@ -27,6 +27,10 @@ module Spree
           return clone_request.mark_completed! if runner.call
 
           raise CloneFailedError, runner.errors.join(', ')
+        rescue LoadError => e
+          clone_request&.mark_failed!(e.message)
+          clone_request&.cleanup_failed_clone!
+          raise e
         rescue StandardError => e
           raise e if e.is_a?(CloneFailedError)
 

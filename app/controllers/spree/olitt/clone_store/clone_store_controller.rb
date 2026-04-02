@@ -6,75 +6,195 @@ module Spree
       class CloneStoreController < Spree::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
+        attr_reader :old_store, :new_store
+
         def clone_store
-          clone_request = build_clone_request
+          clone_request = create_clone_request
           return if clone_request.nil?
 
-          job = enqueue_clone_job(clone_request)
-          return if job.nil?
+          clone_request = enqueue_clone_job(clone_request)
+          return if clone_request.nil?
 
-          clone_request.mark_enqueued!(job)
+          render_clone_accepted(clone_request)
+        end
+
+        def render_error(duplicator:)
+          render_error_payload(duplicator.errors)
+          raise ActiveRecord::Rollback
+        end
+
+        def handle_create_vendor(email, password, password_confirmation)
+          user_email = email.to_s.strip.downcase
+          @vendor = find_or_create_vendor(user_email)
+          user = find_or_create_user(user_email, password, password_confirmation)
+          assign_vendor_role(user, @vendor)
+          activate_vendor(@vendor)
+        end
+
+        def handle_clone_store
+          @old_store = Spree::Store.find_by(id: source_id_param)
+          raise ActiveRecord::RecordNotFound if @old_store.nil?
+
+          @vendor = Spree::Vendor.find_by(notification_email: vendor_params[:email].to_s.strip.downcase) ||
+                    Spree::Vendor.find_by(name: vendor_params[:email].to_s.strip.downcase)
+
+          if @vendor.nil?
+            handle_create_vendor(
+              vendor_params[:email],
+              vendor_params[:password],
+              vendor_params[:password_confirmation]
+            )
+          end
+
+          store = clone_and_update_store(@old_store.dup)
+
+          unless store.save
+            render_error_payload(store.errors)
+            return false
+          end
+
+          @new_store = store
+          true
+        end
+
+        def clone_and_update_store(store)
+          name, url, code, mail_from_address = required_store_params
+
+          store.name = name
+          store.url = url
+          store.code = code
+          store.mail_from_address = mail_from_address
+          store.customer_support_email = mail_from_address
+          store.new_order_notifications_email = mail_from_address
+          store.default = false
+          store.vendor_id = @vendor.id
+          store.logo = nil
+          store.mailer_logo = nil
+          store.favicon_image = nil
+          store
+        end
+
+        def finish
+          @new_store.reload
+          render json: serialize_store(@new_store), status: :created
+        end
+
+        def render_clone_accepted(clone_request)
           render json: serialize_clone_request(clone_request), status: :accepted
         end
 
-        def render_clone_job_status(job_id)
-          clone_request = CloneRequest.find_by(job_id: job_id)
-          return render_clone_job_not_found(job_id) if clone_request.nil?
+        def render_clone_job_status(identifier)
+          clone_request = find_clone_request(identifier)
+          return render_clone_job_not_found(identifier) if clone_request.nil?
 
           render json: serialize_clone_request(clone_request), status: :ok
         end
 
         private
 
-        def build_clone_request
-          source_store_id = source_id_param
-          permitted_store_params = store_params
-          permitted_vendor_params = vendor_params
-
-          creator = CloneRequestCreator.new(
-            source_store_id: source_store_id,
-            store_params: permitted_store_params,
-            vendor_params: permitted_vendor_params
-          )
-          clone_request = creator.call
-          return clone_request if clone_request.present?
-
-          render_error_payload(creator.errors)
-          nil
-        rescue ActionController::ParameterMissing => e
-          render_error_payload([e.message])
-          nil
-        end
-
         def enqueue_clone_job(clone_request)
-          Spree::Olitt::CloneStore::CloneStoreJob.perform_later(clone_request.id)
+          job = Spree::Olitt::CloneStore::CloneStoreJob.perform_later(clone_request.id)
+          clone_request.mark_enqueued!(job)
+          clone_request.reload
         rescue StandardError => e
-          cleanup_failed_clone_request(clone_request)
+          cleanup_new_store_after_enqueue_failure(clone_request)
           render json: { errors: ["Unable to queue store clone: #{e.message}"] }, status: :internal_server_error
           nil
         end
 
-        def cleanup_failed_clone_request(clone_request)
+        def cleanup_new_store_after_enqueue_failure(clone_request)
+          return if clone_request.blank?
+
+          clone_request.mark_failed!('Failed to enqueue clone job')
           clone_request.cleanup_failed_clone!
-          clone_request.destroy!
         end
 
-        def render_clone_job_not_found(job_id)
+        def render_clone_job_not_found(identifier)
           render json: {
-            errors: ["Clone job not found for id #{job_id}"],
+            errors: ["Clone job not found for id #{identifier}"],
             meta: {
-              job_id: job_id,
+              identifier: identifier,
               status: 'not_found'
             }
           }, status: :not_found
         end
 
-        def serialize_clone_request(clone_request)
-          CloneRequestPresenter.new(clone_request: clone_request, serializer: method(:serialize_store)).as_json
+        def find_clone_request(identifier)
+          return nil if identifier.blank?
+
+          CloneRequest.find_by(id: identifier) || CloneRequest.find_by(job_id: identifier)
         end
 
-        def render_error_payload(errors)
-          render json: { errors: normalize_errors(errors) }, status: :unprocessable_entity
+        def create_clone_request
+          creator = CloneRequestCreator.new(
+            source_store_id: source_id_param,
+            store_params: store_params,
+            vendor_params: vendor_params
+          )
+          clone_request = creator.call
+
+          if clone_request.present?
+            @old_store = clone_request.source_store
+            @new_store = clone_request.store
+          else
+            render_error_payload(creator.errors, status: :bad_request)
+            return nil
+          end
+
+          clone_request
+        rescue ActiveRecord::RecordNotFound, ActionController::ParameterMissing => e
+          render_error_payload([e.message], status: :bad_request)
+          nil
+        end
+
+        def serialize_clone_request(clone_request)
+          CloneRequestPresenter.new(
+            clone_request: clone_request,
+            serializer: method(:serialize_store)
+          ).as_json
+        end
+
+        def find_or_create_vendor(email)
+          ::Spree::Vendor.find_by(notification_email: email) ||
+            ::Spree::Vendor.find_by(name: email) ||
+            ::Spree::Vendor.create!(
+              name: email,
+              notification_email: email,
+              contact_person_email: email,
+              billing_email: email
+            )
+        end
+
+        def find_or_create_user(email, password, password_confirmation)
+          user = Spree.user_class.find_or_initialize_by(email: email)
+          return user if user.persisted?
+
+          user.password = password
+          user.password_confirmation = password_confirmation.presence || password
+          user.save!
+          user
+        end
+
+        def assign_vendor_role(user, vendor)
+          vendor_role_name = defined?(Spree::Vendor::DEFAULT_VENDOR_ROLE) ? Spree::Vendor::DEFAULT_VENDOR_ROLE : 'vendor'
+          vendor_role = Spree::Role.find_or_create_by!(name: vendor_role_name)
+
+          Spree::RoleUser.find_or_create_by!(
+            user: user,
+            role: vendor_role,
+            resource: vendor
+          )
+        end
+
+        def activate_vendor(vendor)
+          return if %w[active approved].include?(vendor.state)
+
+          vendor.start_onboarding! if vendor.respond_to?(:start_onboarding!) && vendor.state == 'invited'
+          vendor.approve! if vendor.respond_to?(:approve!) && !%w[active approved].include?(vendor.state)
+        end
+
+        def render_error_payload(errors, status: :unprocessable_entity)
+          render json: { errors: normalize_errors(errors) }, status: status
         end
 
         def normalize_errors(errors)

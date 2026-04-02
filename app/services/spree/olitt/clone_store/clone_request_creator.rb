@@ -41,6 +41,9 @@ module Spree
         rescue ActiveRecord::RecordInvalid => e
           @errors = e.record.errors.full_messages.presence || [e.message]
           nil
+        rescue ActiveRecord::RecordNotUnique => e
+          @errors = [extract_record_not_unique_message(e)]
+          nil
         rescue ActiveRecord::RecordNotFound, ActionController::ParameterMissing => e
           @errors = [e.message]
           nil
@@ -77,7 +80,8 @@ module Spree
         end
 
         def find_or_create_vendor(email)
-          vendor = ::Spree::Vendor.find_by(notification_email: email) || ::Spree::Vendor.find_by(name: email)
+          vendor = existing_vendor(email)
+          revive_vendor!(vendor) if vendor.present?
           return [vendor, false] if vendor.present?
 
           [
@@ -89,10 +93,17 @@ module Spree
             ),
             true
           ]
+        rescue ActiveRecord::RecordNotUnique
+          vendor = existing_vendor(email)
+          revive_vendor!(vendor) if vendor.present?
+          return [vendor, false] if vendor.present?
+
+          raise
         end
 
         def find_or_create_user(email, password, password_confirmation)
-          user = Spree.user_class.find_or_initialize_by(email: email)
+          user = existing_user(email) || Spree.user_class.find_or_initialize_by(email: email)
+          revive_user!(user) if user.present?
           return [user, false] if user.persisted?
 
           user.password = password
@@ -100,6 +111,12 @@ module Spree
           user.save!
 
           [user, true]
+        rescue ActiveRecord::RecordNotUnique
+          user = existing_user(email)
+          revive_user!(user) if user.present?
+          return [user, false] if user.present?
+
+          raise
         end
 
         def assign_vendor_role(user, vendor)
@@ -109,6 +126,11 @@ module Spree
           return [role_user, false] if role_user.present?
 
           [Spree::RoleUser.create!(user: user, role: vendor_role, resource: vendor), true]
+        rescue ActiveRecord::RecordNotUnique
+          role_user = Spree::RoleUser.find_by(user: user, role: vendor_role, resource: vendor)
+          return [role_user, false] if role_user.present?
+
+          raise
         end
 
         def activate_vendor(vendor)
@@ -116,6 +138,31 @@ module Spree
 
           vendor.start_onboarding! if vendor.respond_to?(:start_onboarding!) && vendor.state == 'invited'
           vendor.approve! if vendor.respond_to?(:approve!) && !%w[active approved].include?(vendor.state)
+        end
+
+        def existing_vendor(email)
+          ::Spree::Vendor.unscoped.find_by(notification_email: email) || ::Spree::Vendor.unscoped.find_by(name: email)
+        end
+
+        def existing_user(email)
+          Spree.user_class.unscoped.find_by(email: email)
+        end
+
+        def extract_record_not_unique_message(error)
+          raw_message = error.cause&.message.presence || error.message
+          raw_message.to_s.sub(/\AMysql2::Error:\s*/i, '')
+        end
+
+        def revive_vendor!(vendor)
+          return if vendor.blank? || vendor.deleted_at.blank?
+
+          vendor.update_columns(deleted_at: nil, updated_at: Time.current)
+        end
+
+        def revive_user!(user)
+          return if user.blank? || !user.respond_to?(:deleted_at) || user.deleted_at.blank?
+
+          user.update_columns(deleted_at: nil, updated_at: Time.current)
         end
       end
     end

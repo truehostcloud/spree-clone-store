@@ -10,6 +10,7 @@ module Spree
         def as_json
           payload = store_payload
           payload = { data: payload } unless payload.is_a?(Hash)
+          payload[:clone_request_id] = @clone_request.id
           payload[:job_id] = @clone_request.job_id if @clone_request.job_id.present?
           payload[:status] = @clone_request.status
           payload[:meta] = payload.fetch(:meta, {}).merge(metadata)
@@ -29,6 +30,7 @@ module Spree
 
         def metadata
           {
+            clone_request_id: @clone_request.id,
             status: @clone_request.status,
             job_id: @clone_request.job_id,
             clone_job_id: @clone_request.job_id,

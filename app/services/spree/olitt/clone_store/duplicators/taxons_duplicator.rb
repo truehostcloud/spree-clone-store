@@ -38,10 +38,12 @@ module Spree
             attributes = new_taxon.attributes
             attributes = attributes.except('lft', 'rgt', 'depth')
             new_taxon = Spree::Taxon.new attributes
+            new_taxon.name = unique_taxon_name(old_taxon: old_taxon, new_taxon: new_taxon)
+            new_taxon.permalink = unique_taxon_permalink(old_taxon: old_taxon, new_taxon: new_taxon)
             save_model(model_instance: new_taxon)
             return if errors_are_present?
 
-            @taxons_cache[new_taxon.permalink] = [new_taxon]
+            @taxons_cache[old_taxon.permalink] = [new_taxon]
           end
 
           def get_old_child_taxons(parent_taxon_id:)
@@ -54,6 +56,22 @@ module Spree
 
           def get_new_parent_taxon(old_taxon:)
             @taxons_cache[old_taxon.parent.permalink].first
+          end
+
+          def unique_taxon_name(old_taxon:, new_taxon:)
+            unique_value(base_value: old_taxon.name, separator: ' ') do |candidate|
+              taxon_scope(new_taxon).where(Spree::Taxon.arel_table[:name].lower.eq(candidate.downcase)).exists?
+            end
+          end
+
+          def unique_taxon_permalink(old_taxon:, new_taxon:)
+            unique_value(base_value: old_taxon.permalink, max_length: 255) do |candidate|
+              taxon_scope(new_taxon).where(Spree::Taxon.arel_table[:permalink].lower.eq(candidate.downcase)).exists?
+            end
+          end
+
+          def taxon_scope(new_taxon)
+            Spree::Taxon.where(parent_id: new_taxon.parent_id, taxonomy_id: new_taxon.taxonomy_id)
           end
         end
       end

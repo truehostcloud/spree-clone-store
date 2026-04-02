@@ -27,6 +27,29 @@ module Spree
 
             model_instance
           end
+
+        def unique_value(base_value:, separator: '-', max_length: nil)
+          base_string = base_value.to_s
+          candidate = truncate_value(base_string, max_length)
+          suffix_index = 2
+
+          while yield(candidate)
+            suffix = "#{separator}#{suffix_index}"
+            candidate = truncate_value(base_string, max_length, suffix)
+            suffix_index += 1
+          end
+
+          candidate
+        end
+
+        private
+
+        def truncate_value(base_string, max_length, suffix = '')
+          return "#{base_string}#{suffix}" if max_length.blank?
+
+          truncated_base = base_string.first(max_length - suffix.length)
+          "#{truncated_base}#{suffix}"
+        end
         end
       end
     end
