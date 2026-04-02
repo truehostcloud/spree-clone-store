@@ -9,14 +9,23 @@ module Spree
 
           before_action :force_json_request_format
           before_action :validate_token_client
-          before_action -> { doorkeeper_authorize! :write, :admin }
+          before_action :authorize_clone_store_request!
           before_action :authorize_superadmin_user_token!
 
           def create
             clone_store
           end
 
+          def show
+            render_clone_job_status(params[:job_id])
+          end
+
           private
+
+          def authorize_clone_store_request!
+            scopes = action_name == 'show' ? %i[read admin] : %i[write admin]
+            doorkeeper_authorize!(*scopes)
+          end
 
           def authorize_superadmin_user_token!
             return if spree_current_user.nil?

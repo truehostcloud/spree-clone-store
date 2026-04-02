@@ -21,20 +21,27 @@ module Spree
               save_model(model_instance: new_taxonomy) if new_taxonomy.new_record? || new_taxonomy.changed?
               break if errors_are_present?
 
-              @root_taxons[new_taxonomy.root.permalink] = [new_taxonomy.root]
-              cache_taxonomies(new_taxonomy: new_taxonomy)
+              @root_taxons[old_taxonomy.root.permalink] = [new_taxonomy.root]
+              cache_taxonomies(old_taxonomy: old_taxonomy, new_taxonomy: new_taxonomy)
             end
           end
 
           def find_or_build_taxonomy(old_taxonomy:)
-            new_taxonomy = @new_store.taxonomies.with_matching_name(old_taxonomy.name).first || old_taxonomy.dup
+            new_taxonomy = old_taxonomy.dup
             new_taxonomy.store = @new_store
             assign_vendor(model_instance: new_taxonomy, vendor: @vendor)
+            new_taxonomy.name = unique_taxonomy_name(old_taxonomy.name)
             new_taxonomy
           end
 
-          def cache_taxonomies(new_taxonomy:)
-            @taxonomies_cache[new_taxonomy.name] = [new_taxonomy]
+          def cache_taxonomies(old_taxonomy:, new_taxonomy:)
+            @taxonomies_cache[old_taxonomy.name] = [new_taxonomy]
+          end
+
+          def unique_taxonomy_name(base_name)
+            unique_value(base_value: base_name, separator: ' ') do |candidate|
+              @new_store.taxonomies.with_matching_name(candidate).exists?
+            end
           end
         end
       end

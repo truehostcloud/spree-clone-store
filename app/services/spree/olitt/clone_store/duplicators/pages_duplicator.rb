@@ -22,10 +22,20 @@ module Spree
               new_page = old_page.dup
               new_page.store = @new_store
               assign_vendor(model_instance: new_page, vendor: @vendor)
+              new_page.slug = unique_page_slug(old_page: old_page)
               save_model(model_instance: new_page)
               break if errors_are_present?
 
-              @pages_cache[new_page.slug] = [new_page]
+              @pages_cache[old_page.slug] = [new_page]
+            end
+          end
+
+          private
+
+          def unique_page_slug(old_page:)
+            base_slug = old_page.slug.presence || old_page.name.to_s.parameterize
+            unique_value(base_value: base_slug, max_length: 255) do |candidate|
+              @new_store.cms_pages.where(slug: candidate).exists?
             end
           end
         end

@@ -1,109 +1,21 @@
 require 'json'
 
-require_relative 'duplicators/linked_resource_duplicator'
-require_relative 'duplicators/menu_items_duplicator'
-require_relative 'duplicators/menus_duplicator'
-require_relative 'duplicators/pages_duplicator'
-require_relative 'duplicators/products_duplicator'
-require_relative 'duplicators/sections_duplicator'
-require_relative 'duplicators/taxonomies_duplicator'
-require_relative 'duplicators/taxons_duplicator'
-
 module Spree
   module Olitt
     module CloneStore
       class CloneStoreController < Spree::BaseController
         include Spree::Olitt::CloneStore::CloneStoreHelpers
 
+        attr_reader :old_store, :new_store
+
         def clone_store
-          ActiveRecord::Base.transaction do
-            return unless handle_clone_store
+          clone_request = create_clone_request
+          return if clone_request.nil?
 
-            linked_resource = Duplicators::LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
+          clone_request = enqueue_clone_job(clone_request)
+          return if clone_request.nil?
 
-            # Taxonomies
-            taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(old_store: @old_store,
-                                                                          new_store: @new_store,
-                                                                          vendor: @vendor)
-            taxonomies_duplicator.handle_clone_taxonomies
-
-            return render_error(duplicator: taxonomies_duplicator) if taxonomies_duplicator.errors_are_present?
-
-            # Taxons
-            taxon_duplicator = Duplicators::TaxonsDuplicator.new(old_store: @old_store,
-                                                                 new_store: @new_store,
-                                                                 vendor: @vendor,
-                                                                 taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
-                                                                 root_taxons: taxonomies_duplicator.root_taxons)
-            taxon_duplicator.handle_clone_taxons
-
-            return render_error(duplicator: taxon_duplicator) if taxon_duplicator.errors_are_present?
-
-            linked_resource.taxons_cache = taxon_duplicator.taxons_cache
-
-            # Pages
-            page_duplicator = Duplicators::PagesDuplicator.new(old_store: @old_store,
-                                                               new_store: @new_store,
-                                                               vendor: @vendor,
-                                                               )
-            page_duplicator.handle_clone_pages
-
-            return render_error(duplicator: page_duplicator) if page_duplicator.errors_are_present?
-
-            linked_resource.pages_cache = page_duplicator.pages_cache
-
-            # Products
-            product_duplicator = Duplicators::ProductsDuplicator.new(old_store: @old_store,
-                                                                     new_store: @new_store,
-                                                                     vendor: @vendor,
-                                                                     taxon_cache: taxon_duplicator.taxons_cache)
-            product_duplicator.handle_clone_products
-
-            return render_error(duplicator: product_duplicator) if product_duplicator.errors_are_present?
-
-            linked_resource.products_cache = product_duplicator.products_cache
-
-            # Sections
-            section_duplicator = Duplicators::SectionsDuplicator.new(old_store: @old_store,
-                                                                     new_store: @new_store,
-                                                                     vendor: @vendor,
-                                                                     pages_cache: page_duplicator.pages_cache,
-                                                                     linked_resource: linked_resource)
-            section_duplicator.handle_clone_sections
-
-            return render_error(duplicator: section_duplicator) if section_duplicator.errors_are_present?
-
-            # Menus
-            menus_duplicator = Duplicators::MenusDuplicator.new(old_store: @old_store,
-                                                                new_store: @new_store,
-                                                                vendor: @vendor)
-            menus_duplicator.handle_clone_menus
-
-            return render_error(duplicator: menus_duplicator) if menus_duplicator.errors_are_present?
-
-            # Menu Items
-            menu_items_duplicator = Duplicators::MenuItemsDuplicator.new(old_store: @old_store,
-                                                                         new_store: @new_store,
-                                                                         vendor: @vendor,
-                                                                         new_menus_cache: menus_duplicator.menus_cache,
-                                                                         root_menu_items: menus_duplicator.root_menu_items,
-                                                                         linked_resource: linked_resource)
-            menu_items_duplicator.handle_clone_menu_items
-
-            # Payment methods
-            payment_methods_duplicator = Duplicators::PaymentMethodsDuplicator.new(new_store: @new_store, vendor: @vendor)
-            payment_methods_duplicator.duplicate
-
-            # Shipping methods
-            shipping_methods_duplicator = Duplicators::ShippingMethodsDuplicator.new(vendor: @vendor, new_store: @new_store)
-            shipping_methods_duplicator.duplicate
-
-            return render_error(duplicator: menu_items_duplicator) if menu_items_duplicator.errors_are_present?
-
-            attach_store_images
-
-            finish
-          end
+          render_clone_accepted(clone_request)
         end
 
         def render_error(duplicator:)
@@ -119,13 +31,13 @@ module Spree
           activate_vendor(@vendor)
         end
 
-        # Store
         def handle_clone_store
           @old_store = Spree::Store.find_by(id: source_id_param)
           raise ActiveRecord::RecordNotFound if @old_store.nil?
 
           @vendor = Spree::Vendor.find_by(notification_email: vendor_params[:email].to_s.strip.downcase) ||
                     Spree::Vendor.find_by(name: vendor_params[:email].to_s.strip.downcase)
+
           if @vendor.nil?
             handle_create_vendor(
               vendor_params[:email],
@@ -134,7 +46,7 @@ module Spree
             )
           end
 
-          store = clone_and_update_store @old_store.dup
+          store = clone_and_update_store(@old_store.dup)
 
           unless store.save
             render_error_payload(store.errors)
@@ -162,31 +74,85 @@ module Spree
           store
         end
 
-        def attach_store_images
-          store = @new_store
-          if @old_store&.logo&.attachment&.attached?
-            store.build_logo
-            store.logo.attachment.attach(@old_store.logo.attachment.blob)
-          end
-          if @old_store&.mailer_logo&.attachment&.attached?
-            store.build_mailer_logo
-            store.mailer_logo.attachment.attach(@old_store.mailer_logo.attachment.blob)
-          end
-          if @old_store&.favicon_image&.attachment&.attached?
-            store.build_favicon_image
-            store.favicon_image.attachment.attach(@old_store.favicon_image.attachment.blob)
-          end
-          store.save
-        end
-
-        # Finish Lifecycle
-
         def finish
           @new_store.reload
           render json: serialize_store(@new_store), status: :created
         end
 
+        def render_clone_accepted(clone_request)
+          render json: serialize_clone_request(clone_request), status: :accepted
+        end
+
+        def render_clone_job_status(identifier)
+          clone_request = find_clone_request(identifier)
+          return render_clone_job_not_found(identifier) if clone_request.nil?
+
+          render json: serialize_clone_request(clone_request), status: :ok
+        end
+
         private
+
+        def enqueue_clone_job(clone_request)
+          job = Spree::Olitt::CloneStore::CloneStoreJob.perform_later(clone_request.id)
+          clone_request.mark_enqueued!(job)
+          clone_request.reload
+        rescue StandardError => e
+          cleanup_new_store_after_enqueue_failure(clone_request)
+          render json: { errors: ["Unable to queue store clone: #{e.message}"] }, status: :internal_server_error
+          nil
+        end
+
+        def cleanup_new_store_after_enqueue_failure(clone_request)
+          return if clone_request.blank?
+
+          clone_request.mark_failed!('Failed to enqueue clone job')
+          clone_request.cleanup_failed_clone!
+        end
+
+        def render_clone_job_not_found(identifier)
+          render json: {
+            errors: ["Clone job not found for id #{identifier}"],
+            meta: {
+              identifier: identifier,
+              status: 'not_found'
+            }
+          }, status: :not_found
+        end
+
+        def find_clone_request(identifier)
+          return nil if identifier.blank?
+
+          CloneRequest.find_by(id: identifier) || CloneRequest.find_by(job_id: identifier)
+        end
+
+        def create_clone_request
+          creator = CloneRequestCreator.new(
+            source_store_id: source_id_param,
+            store_params: store_params,
+            vendor_params: vendor_params
+          )
+          clone_request = creator.call
+
+          if clone_request.present?
+            @old_store = clone_request.source_store
+            @new_store = clone_request.store
+          else
+            render_error_payload(creator.errors, status: :bad_request)
+            return nil
+          end
+
+          clone_request
+        rescue ActiveRecord::RecordNotFound, ActionController::ParameterMissing => e
+          render_error_payload([e.message], status: :bad_request)
+          nil
+        end
+
+        def serialize_clone_request(clone_request)
+          CloneRequestPresenter.new(
+            clone_request: clone_request,
+            serializer: method(:serialize_store)
+          ).as_json
+        end
 
         def find_or_create_vendor(email)
           ::Spree::Vendor.find_by(notification_email: email) ||
@@ -227,8 +193,8 @@ module Spree
           vendor.approve! if vendor.respond_to?(:approve!) && !%w[active approved].include?(vendor.state)
         end
 
-        def render_error_payload(errors)
-          render json: { errors: normalize_errors(errors) }, status: :unprocessable_entity
+        def render_error_payload(errors, status: :unprocessable_entity)
+          render json: { errors: normalize_errors(errors) }, status: status
         end
 
         def normalize_errors(errors)
