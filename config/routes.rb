@@ -3,7 +3,7 @@ Spree::Core::Engine.add_routes do
     namespace :v2 do
       namespace :platform do
         post '/clone-store', to: 'clone_stores#create'
-        get '/clone-store/:job_id', to: 'clone_stores#show'
+        get '/clone-store/:clone_request_id', to: 'clone_stores#show'
       end
     end
   end

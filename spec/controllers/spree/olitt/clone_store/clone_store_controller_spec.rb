@@ -60,6 +60,16 @@ describe Spree::Olitt::CloneStore::CloneStoreController, type: :controller do
     end
   end
 
+  describe '#find_clone_request' do
+    it 'looks up clone requests by clone_request_id only' do
+      clone_request = instance_double(Spree::Olitt::CloneStore::CloneRequest)
+
+      expect(Spree::Olitt::CloneStore::CloneRequest).to receive(:find_by).with(id: '123').and_return(clone_request)
+
+      expect(controller.send(:find_clone_request, '123')).to eq(clone_request)
+    end
+  end
+
   # Taxonomy
 
   describe '# Can Clone Taxonomy' do

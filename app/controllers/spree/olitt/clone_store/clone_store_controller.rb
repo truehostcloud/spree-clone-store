@@ -83,9 +83,9 @@ module Spree
           render json: serialize_clone_request(clone_request), status: :accepted
         end
 
-        def render_clone_job_status(identifier)
-          clone_request = find_clone_request(identifier)
-          return render_clone_job_not_found(identifier) if clone_request.nil?
+        def render_clone_request_status(clone_request_id)
+          clone_request = find_clone_request(clone_request_id)
+          return render_clone_request_not_found(clone_request_id) if clone_request.nil?
 
           render json: serialize_clone_request(clone_request), status: :ok
         end
@@ -109,20 +109,20 @@ module Spree
           clone_request.cleanup_failed_clone!
         end
 
-        def render_clone_job_not_found(identifier)
+        def render_clone_request_not_found(clone_request_id)
           render json: {
-            errors: ["Clone job not found for id #{identifier}"],
+            errors: ["Clone request not found for id #{clone_request_id}"],
             meta: {
-              identifier: identifier,
+              clone_request_id: clone_request_id,
               status: 'not_found'
             }
           }, status: :not_found
         end
 
-        def find_clone_request(identifier)
-          return nil if identifier.blank?
+        def find_clone_request(clone_request_id)
+          return nil if clone_request_id.blank?
 
-          CloneRequest.find_by(id: identifier) || CloneRequest.find_by(job_id: identifier)
+          CloneRequest.find_by(id: clone_request_id)
         end
 
         def create_clone_request
