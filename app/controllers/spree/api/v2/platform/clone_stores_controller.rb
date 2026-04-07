@@ -17,7 +17,7 @@ module Spree
           end
 
           def show
-            render_clone_job_status(params[:job_id])
+            render_clone_request_status(params[:clone_request_id])
           end
 
           private
