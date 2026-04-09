@@ -6,6 +6,8 @@ module Spree
           skip_forgery_protection
 
           rescue_from Doorkeeper::Errors::DoorkeeperError, with: :render_unauthorized
+          rescue_from ActiveRecord::RecordNotUnique, with: :render_bad_request_exception
+          rescue_from ActiveRecord::RecordInvalid, with: :render_record_invalid
 
           before_action :force_json_request_format
           before_action :validate_token_client
@@ -52,6 +54,14 @@ module Spree
             render json: { error: message }, status: status
           end
 
+          def render_bad_request_exception(exception)
+            render json: { errors: [exception.cause&.message || exception.message] }, status: :bad_request
+          end
+
+          def render_record_invalid(exception)
+            render json: { errors: exception.record.errors.full_messages.presence || [exception.message] }, status: :bad_request
+          end
+
           def spree_current_user
             return nil unless doorkeeper_token
             return nil if doorkeeper_token.resource_owner_id.nil?
@@ -61,7 +71,7 @@ module Spree
           end
 
           def superuser_with_global_admin_role?(user)
-            return false if user.blank?
+            return false unless user.present?
 
             user.role_users.joins(:role).exists?(
               spree_roles: { name: Spree::Role::ADMIN_ROLE },
