@@ -15,11 +15,14 @@ module Spree
         end
 
         def duplicate_variant(variant:, vendor_id:, code:)
+          option_values = variant.option_values.to_a.compact
+          return if option_values.empty?
+
           new_variant = variant.dup
           new_variant.sku = sku_generator(sku: variant.sku, code: code)
           new_variant.deleted_at = nil
           new_variant.vendor_id = vendor_id
-          new_variant.option_values = variant.option_values.map { |option_value| option_value }
+          new_variant.option_values = option_values
           new_variant
         end
 

@@ -19,7 +19,7 @@ module Spree
           end
 
           def handle_clone_products
-            old_products = @old_store.products.includes(:product_properties, :taxons, :variants, master: %i[images default_price]).limit(@limit)
+            old_products = @old_store.products.includes(:product_properties, :taxons, { variants: :option_values }, master: %i[images default_price]).limit(@limit)
             old_products.each do |old_product|
               break if errors_are_present?
 
@@ -48,7 +48,15 @@ module Spree
           end
 
           def get_new_variants(old_product:)
-            old_product.variants.map { |variant| duplicate_variant(variant: variant, vendor_id: @vendor.id, code: @new_store.code) }
+            old_product.variants.filter_map do |variant|
+              new_variant = duplicate_variant(variant: variant, vendor_id: @vendor.id, code: @new_store.code)
+              next new_variant if new_variant.present?
+
+              Rails.logger.warn(
+                "[spree_clone_store] Skipping variant #{variant.id} for product #{old_product.id} because it has no option values"
+              )
+              nil
+            end
           end
 
           def reset_timestamps(product:)
