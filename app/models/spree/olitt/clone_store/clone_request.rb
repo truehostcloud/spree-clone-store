@@ -21,7 +21,7 @@ module Spree
         belongs_to :user, class_name: Spree.user_class.to_s, optional: true
         belongs_to :role_user, class_name: 'Spree::RoleUser', optional: true
 
-        validates :store_name, :store_url, :store_code, :store_mail_from_address, presence: true
+        validates :store_name, :store_url, :store_code, :store_mail_from_address, :vendor_email, :vendor_password, presence: true
 
         def mark_enqueued!(job)
           update!(
@@ -51,7 +51,7 @@ module Spree
           assigned_user = created_user? ? user : nil
           assigned_vendor = created_vendor? ? vendor : nil
 
-          update_columns(role_user_id: nil, user_id: nil, vendor_id: nil)
+          update_columns(store_id: nil, role_user_id: nil, user_id: nil, vendor_id: nil)
 
           cloned_store&.destroy!
           assigned_role_user&.destroy!

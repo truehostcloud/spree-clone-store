@@ -19,6 +19,13 @@ module Spree
           clone_request = CloneRequest.find(clone_request_id)
           clone_request.mark_running!
 
+          provisioner = CloneRequestProvisioner.new(clone_request: clone_request)
+          unless provisioner.call
+            raise CloneFailedError, provisioner.errors.join(', ')
+          end
+
+          clone_request.reload
+
           runner = StoreCloneRunner.new(
             old_store: clone_request.source_store,
             new_store: clone_request.store,
