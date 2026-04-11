@@ -44,16 +44,24 @@ module Spree
 
           def assign_product(model:)
             @old_products = @old_store.products.group_by(&:id) if @old_products.nil?
-            old_product = @old_products[model.linked_resource_id].first
-            new_product = @products_cache[old_product.slug].first
+            old_product = @old_products[model.linked_resource_id]&.first
+            return model unless old_product
+
+            new_product = @products_cache[old_product.slug]&.first
+            return model unless new_product
+
             model.linked_resource_id = new_product.id
             model
           end
 
           def assign_page(model:)
             @old_pages = @old_store.cms_pages.group_by(&:id) if @old_pages.nil?
-            old_page = @old_pages[model.linked_resource_id].first
-            new_page = @pages_cache[old_page.slug].first
+            old_page = @old_pages[model.linked_resource_id]&.first
+            return model unless old_page
+
+            new_page = @pages_cache[old_page.slug]&.first
+            return model unless new_page
+
             model.linked_resource_id = new_page.id
             model
           end

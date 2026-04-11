@@ -23,10 +23,12 @@ module Spree
               new_page.store = @new_store
               assign_vendor(model_instance: new_page, vendor: @vendor)
               new_page.slug = unique_page_slug(old_page: old_page)
-              save_model(model_instance: new_page)
-              break if errors_are_present?
+              saved = save_model(model_instance: new_page, context: "page #{old_page.id}")
+              next unless saved
 
               @pages_cache[old_page.slug] = [new_page]
+            rescue StandardError => e
+              record_errors([e.message], context: "page #{old_page.id}")
             end
           end
 

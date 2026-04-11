@@ -17,13 +17,22 @@ module Spree
           def handle_clone_taxonomies
             taxonomies = @old_store.taxonomies
             taxonomies.each do |old_taxonomy|
-              new_taxonomy = find_or_build_taxonomy(old_taxonomy: old_taxonomy)
-              save_model(model_instance: new_taxonomy) if new_taxonomy.new_record? || new_taxonomy.changed?
-              break if errors_are_present?
-
-              @root_taxons[old_taxonomy.root.permalink] = [new_taxonomy.root]
-              cache_taxonomies(old_taxonomy: old_taxonomy, new_taxonomy: new_taxonomy)
+              clone_taxonomy(old_taxonomy)
+            rescue StandardError => e
+              record_errors([e.message], context: "taxonomy #{old_taxonomy.id}")
             end
+          end
+
+          def clone_taxonomy(old_taxonomy)
+            new_taxonomy = find_or_build_taxonomy(old_taxonomy: old_taxonomy)
+            saved = true
+            if new_taxonomy.new_record? || new_taxonomy.changed?
+              saved = save_model(model_instance: new_taxonomy, context: "taxonomy #{old_taxonomy.id}")
+            end
+            return unless saved
+
+            @root_taxons[old_taxonomy.root.permalink] = [new_taxonomy.root]
+            cache_taxonomies(old_taxonomy: old_taxonomy, new_taxonomy: new_taxonomy)
           end
 
           def find_or_build_taxonomy(old_taxonomy:)
