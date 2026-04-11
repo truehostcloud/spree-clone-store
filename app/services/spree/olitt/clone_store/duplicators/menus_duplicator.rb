@@ -18,13 +18,17 @@ module Spree
             return unless @old_store.respond_to?(:menus)
 
             menus = @old_store.menus.includes([:root])
-            menus.map do |menu|
+            menus.each do |menu|
               new_menu = menu.dup
               new_menu.store = @new_store
               assign_vendor(model_instance: new_menu, vendor: @vendor)
-              save_model(model_instance: new_menu)
+              saved = save_model(model_instance: new_menu, context: "menu #{menu.id}")
+              next unless saved
+
               @root_menu_items[menu.root] = new_menu.root
               cache_menu(new_menu: new_menu)
+            rescue StandardError => e
+              record_errors([e.message], context: "menu #{menu.id}")
             end
           end
 

@@ -21,9 +21,9 @@ module Spree
           def handle_clone_products
             old_products = @old_store.products.includes(:product_properties, :taxons, { variants: :option_values }, master: %i[images default_price]).limit(@limit)
             old_products.each do |old_product|
-              break if errors_are_present?
-
               save_product(old_product: old_product)
+            rescue StandardError => e
+              record_errors([e.message], context: "product #{old_product.id}")
             end
           end
 
@@ -37,8 +37,8 @@ module Spree
             new_product.variants = get_new_variants(old_product: old_product)
             new_product.master = duplicate_master_variant(product: old_product, vendor_id: @vendor.id, code: @new_store.code)
             new_product.product_properties = reset_properties(product: old_product)
-            save_model(model_instance: new_product)
-            return if errors_are_present?
+            saved = save_model(model_instance: new_product, context: "product #{old_product.id}")
+            return unless saved
 
             @products_cache[old_product.slug] = [new_product]
           end

@@ -25,8 +25,10 @@ module Spree
                   new_shipping_method.zones = shipping_method.zones.all
                   new_shipping_method.created_at = Time.zone.now
                   new_shipping_method.updated_at = nil
-                  save_model(model_instance: new_shipping_method)
+                  save_model(model_instance: new_shipping_method, context: "shipping method #{shipping_method_id}")
                 end
+              rescue StandardError => e
+                record_errors([e.message], context: "shipping method #{shipping_method_id}")
               end
             end
           end

@@ -20,11 +20,12 @@ module Spree
           end
 
           def handle_clone_taxons
-            while @old_taxons_by_depth[@depth] && !errors_are_present?
+            while @old_taxons_by_depth[@depth]
               old_taxons = @old_taxons_by_depth[@depth]
               old_taxons.each do |old_taxon|
                 save_new_taxon(old_taxon: old_taxon)
-                break if errors_are_present?
+              rescue StandardError => e
+                record_errors([e.message], context: "taxon #{old_taxon.id}")
               end
               @depth += 1
             end
@@ -40,8 +41,8 @@ module Spree
             new_taxon = Spree::Taxon.new attributes
             new_taxon.name = unique_taxon_name(old_taxon: old_taxon, new_taxon: new_taxon)
             new_taxon.permalink = unique_taxon_permalink(old_taxon: old_taxon, new_taxon: new_taxon)
-            save_model(model_instance: new_taxon)
-            return if errors_are_present?
+            saved = save_model(model_instance: new_taxon, context: "taxon #{old_taxon.id}")
+            return unless saved
 
             @taxons_cache[old_taxon.permalink] = [new_taxon]
           end
@@ -51,11 +52,11 @@ module Spree
           end
 
           def get_new_taxonomy(old_taxon:)
-            @new_taxonomies_by_name[old_taxon.taxonomy.name].first
+            @new_taxonomies_by_name[old_taxon.taxonomy.name]&.first
           end
 
           def get_new_parent_taxon(old_taxon:)
-            @taxons_cache[old_taxon.parent.permalink].first
+            @taxons_cache[old_taxon.parent.permalink]&.first
           end
 
           def unique_taxon_name(old_taxon:, new_taxon:)

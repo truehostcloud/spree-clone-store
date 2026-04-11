@@ -23,11 +23,12 @@ module Spree
           end
 
           def handle_clone_menu_items
-            while @old_menu_items_by_depth[@depth] && !errors_are_present?
+            while @old_menu_items_by_depth[@depth]
               old_menu_items = @old_menu_items_by_depth[@depth]
               old_menu_items.each do |old_menu_item|
                 save_menu_item(old_menu_item: old_menu_item)
-                break if errors_are_present?
+              rescue StandardError => e
+                record_errors([e.message], context: "menu item #{old_menu_item.id}")
               end
               @depth += 1
             end
@@ -39,14 +40,14 @@ module Spree
             new_menu_item.menu = get_new_menu(old_menu: old_menu_item.menu)
             assign_vendor(model_instance: new_menu_item, vendor: @vendor)
             new_menu_item = @linked_resource.assign_linked_resource(model: new_menu_item) unless new_menu_item.linked_resource_id.nil?
-            save_model(model_instance: new_menu_item)
-            return if errors_are_present?
+            saved = save_model(model_instance: new_menu_item, context: "menu item #{old_menu_item.id}")
+            return unless saved
 
             @old_to_new_menu_item_map[old_menu_item] = new_menu_item
           end
 
           def get_new_menu(old_menu:)
-            @new_menus_by_location_locale[old_menu.location][old_menu.locale].first
+            @new_menus_by_location_locale.dig(old_menu.location, old_menu.locale)&.first
           end
         end
       end

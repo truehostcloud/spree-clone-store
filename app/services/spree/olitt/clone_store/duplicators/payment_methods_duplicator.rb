@@ -21,8 +21,10 @@ module Spree
                   assign_vendor(model_instance: new_payment_method, vendor: @vendor)
                   new_payment_method.created_at = Time.zone.now
                   new_payment_method.updated_at = nil
-                  save_model(model_instance: new_payment_method)
+                  save_model(model_instance: new_payment_method, context: "payment method #{payment_method_id}")
                 end
+              rescue StandardError => e
+                record_errors([e.message], context: "payment method #{payment_method_id}")
               end
             end
           end
