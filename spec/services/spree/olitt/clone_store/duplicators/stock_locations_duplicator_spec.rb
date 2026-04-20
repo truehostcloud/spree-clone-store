@@ -75,7 +75,6 @@ module Spree
 
             it 'creates a fallback default stock location when the source store has none' do
               products_relation = instance_double('ActiveRecord::Relation')
-              variants_relation = instance_double('ActiveRecord::Relation')
               old_store = instance_double('Spree::Store', vendor: nil, products: products_relation)
               new_store = instance_double('Spree::Store', name: 'Gallery shop', default_country: :us_country)
               vendor_stock_locations = instance_double('ActiveRecord::Relation')
