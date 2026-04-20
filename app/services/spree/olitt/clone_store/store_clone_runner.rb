@@ -1,13 +1,19 @@
 require_relative 'duplicators/linked_resource_duplicator'
 require_relative 'duplicators/menu_items_duplicator'
 require_relative 'duplicators/menus_duplicator'
+require_relative 'duplicators/option_types_duplicator'
 require_relative 'duplicators/pages_duplicator'
 require_relative 'duplicators/payment_methods_duplicator'
 require_relative 'duplicators/products_duplicator'
 require_relative 'duplicators/sections_duplicator'
+require_relative 'duplicators/shipping_categories_duplicator'
 require_relative 'duplicators/shipping_methods_duplicator'
+require_relative 'duplicators/stock_items_duplicator'
+require_relative 'duplicators/stock_locations_duplicator'
 require_relative 'duplicators/taxonomies_duplicator'
 require_relative 'duplicators/taxons_duplicator'
+require_relative 'duplicators/vendor_addresses_duplicator'
+require_relative 'zone_resolver'
 
 module Spree
   module Olitt
@@ -26,6 +32,21 @@ module Spree
 
         def call
           linked_resource = Duplicators::LinkedResourceDuplicator.new(old_store: @old_store, new_store: @new_store)
+
+          stock_locations_duplicator = Duplicators::StockLocationsDuplicator.new(
+            old_store: @old_store,
+            new_store: @new_store,
+            vendor: @vendor
+          )
+          run_section('stock locations', stock_locations_duplicator) { stock_locations_duplicator.handle_clone_stock_locations }
+
+          vendor_addresses_duplicator = Duplicators::VendorAddressesDuplicator.new(
+            old_store: @old_store,
+            new_store: @new_store,
+            vendor: @vendor,
+            stock_locations_duplicator: stock_locations_duplicator
+          )
+          run_section('vendor addresses', vendor_addresses_duplicator) { vendor_addresses_duplicator.handle_clone_vendor_addresses }
 
           taxonomies_duplicator = Duplicators::TaxonomiesDuplicator.new(
             old_store: @old_store,
@@ -52,14 +73,44 @@ module Spree
           run_section('pages', page_duplicator) { page_duplicator.handle_clone_pages }
           linked_resource.pages_cache = page_duplicator.pages_cache
 
+          shipping_categories_duplicator = Duplicators::ShippingCategoriesDuplicator.new(
+            old_store: @old_store,
+            new_store: @new_store,
+            vendor: @vendor
+          )
+          run_section('shipping categories', shipping_categories_duplicator) do
+            shipping_categories_duplicator.handle_clone_shipping_categories
+          end
+
+          option_types_duplicator = Duplicators::OptionTypesDuplicator.new(
+            old_store: @old_store,
+            new_store: @new_store,
+            vendor: @vendor
+          )
+          run_section('option types', option_types_duplicator) do
+            option_types_duplicator.handle_clone_option_types
+          end
+
           product_duplicator = Duplicators::ProductsDuplicator.new(
             old_store: @old_store,
             new_store: @new_store,
             vendor: @vendor,
-            taxon_cache: taxon_duplicator.taxons_cache
+            taxon_cache: taxon_duplicator.taxons_cache,
+            shipping_category_cache: shipping_categories_duplicator.shipping_categories_cache,
+            option_type_cache: option_types_duplicator.option_types_cache,
+            option_value_cache: option_types_duplicator.option_values_cache
           )
           run_section('products', product_duplicator) { product_duplicator.handle_clone_products }
           linked_resource.products_cache = product_duplicator.products_cache
+
+          stock_items_duplicator = Duplicators::StockItemsDuplicator.new(
+            old_store: @old_store,
+            new_store: @new_store,
+            vendor: @vendor,
+            stock_locations_cache: stock_locations_duplicator.locations_cache,
+            variants_cache: product_duplicator.variants_cache
+          )
+          run_section('stock items', stock_items_duplicator) { stock_items_duplicator.handle_clone_stock_items }
 
           section_duplicator = Duplicators::SectionsDuplicator.new(
             old_store: @old_store,
@@ -88,10 +139,16 @@ module Spree
           run_section('menu items', menu_items_duplicator) { menu_items_duplicator.handle_clone_menu_items }
 
           run_section('payment methods') do
-            Duplicators::PaymentMethodsDuplicator.new(new_store: @new_store, vendor: @vendor).duplicate
+            Duplicators::PaymentMethodsDuplicator.new(old_store: @old_store, new_store: @new_store, vendor: @vendor).duplicate
           end
           run_section('shipping methods') do
-            Duplicators::ShippingMethodsDuplicator.new(vendor: @vendor, new_store: @new_store).duplicate
+            Duplicators::ShippingMethodsDuplicator.new(
+              old_store: @old_store,
+              vendor: @vendor,
+              new_store: @new_store,
+              shipping_categories_cache: shipping_categories_duplicator.shipping_categories_cache,
+              zone_resolver: ZoneResolver.new
+            ).duplicate
           end
           run_section('store images') { attach_store_images }
 
