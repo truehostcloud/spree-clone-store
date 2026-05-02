@@ -26,8 +26,10 @@ module Spree
         def handle_create_vendor(email, password, password_confirmation)
           user_email = email.to_s.strip.downcase
           @vendor = find_or_create_vendor(user_email)
-          user = find_or_create_user(user_email, password, password_confirmation)
-          assign_vendor_role(user, @vendor)
+          legacy_user = existing_legacy_user(user_email)
+          admin_user = find_or_create_admin_user(user_email, password, password_confirmation, legacy_user: legacy_user)
+          assign_vendor_role(admin_user, @vendor)
+          link_admin_user_to_vendor!(vendor: @vendor, admin_user: admin_user, legacy_user: legacy_user)
           activate_vendor(@vendor)
         end
 
@@ -165,25 +167,57 @@ module Spree
             )
         end
 
-        def find_or_create_user(email, password, password_confirmation)
-          user = Spree.user_class.find_or_initialize_by(email: email)
-          return user if user.persisted?
+        def find_or_create_admin_user(email, password, password_confirmation, legacy_user: nil)
+          admin_user = Spree.admin_user_class.find_or_initialize_by(email: email)
+          return admin_user if admin_user.persisted?
 
-          user.password = password
-          user.password_confirmation = password_confirmation.presence || password
-          user.save!
-          user
+          admin_user.login ||= email if admin_user.respond_to?(:login=)
+          admin_user.password = password
+          admin_user.password_confirmation = password_confirmation.presence || password if admin_user.respond_to?(:password_confirmation=)
+
+          if legacy_user.present?
+            admin_user.first_name ||= legacy_user.first_name if admin_user.respond_to?(:first_name=)
+            admin_user.last_name ||= legacy_user.last_name if admin_user.respond_to?(:last_name=)
+            admin_user.selected_locale ||= legacy_user.selected_locale if admin_user.respond_to?(:selected_locale=)
+          end
+
+          admin_user.save!
+          admin_user
         end
 
-        def assign_vendor_role(user, vendor)
+        def assign_vendor_role(admin_user, vendor)
           vendor_role_name = defined?(Spree::Vendor::DEFAULT_VENDOR_ROLE) ? Spree::Vendor::DEFAULT_VENDOR_ROLE : 'vendor'
-          vendor_role = Spree::Role.find_or_create_by!(name: vendor_role_name)
+          vendor_role = vendor.respond_to?(:default_user_role) ? (vendor.default_user_role || Spree::Role.find_or_create_by!(name: vendor_role_name)) : Spree::Role.find_or_create_by!(name: vendor_role_name)
 
           Spree::RoleUser.find_or_create_by!(
-            user: user,
+            user: admin_user,
             role: vendor_role,
             resource: vendor
           )
+        end
+
+        def existing_legacy_user(email)
+          return nil if Spree.user_class == Spree.admin_user_class
+
+          Spree.user_class.find_by(email: email)
+        end
+
+        def link_admin_user_to_vendor!(vendor:, admin_user:, legacy_user: nil)
+          return unless defined?(Spree::VendorUser)
+          return unless ActiveRecord::Base.connection.data_source_exists?('spree_vendor_users')
+
+          vendor_user = if legacy_user.present?
+            Spree::VendorUser.find_by(vendor_id: vendor.id, user_id: legacy_user.id)
+          end
+
+          if vendor_user.nil? && Spree::VendorUser.column_names.include?('admin_user_id')
+            vendor_user = Spree::VendorUser.find_by(vendor_id: vendor.id, admin_user_id: admin_user.id)
+          end
+
+          vendor_user ||= Spree::VendorUser.new(vendor_id: vendor.id)
+          vendor_user.user_id = legacy_user.id if legacy_user.present? && vendor_user.respond_to?(:user_id=) && vendor_user.user_id.blank?
+          vendor_user.admin_user_id = admin_user.id if vendor_user.respond_to?(:admin_user_id=)
+          vendor_user.save! if vendor_user.new_record? || vendor_user.changed?
         end
 
         def activate_vendor(vendor)

@@ -55,6 +55,27 @@ module Spree
             expect(new_variant).to have_received(:option_values=).with(option_values)
           end
         end
+
+        describe '#assign_variant_prices' do
+          it 'does not assign a blank fallback price when the source variant has no prices or price amount' do
+            old_variant = instance_double('Spree::Variant', prices: [], price: nil)
+            new_variant = instance_double('Spree::Variant')
+
+            allow(new_variant).to receive(:respond_to?).with(:prices=).and_return(true)
+            allow(new_variant).to receive(:respond_to?).with(:price=).and_return(true)
+            allow(new_variant).to receive(:respond_to?).with(:currency=).and_return(true)
+            allow(old_variant).to receive(:respond_to?).with(:price).and_return(true)
+            allow(old_variant).to receive(:respond_to?).with(:currency).and_return(true)
+            allow(new_variant).to receive(:prices=)
+            allow(new_variant).to receive(:price=)
+            allow(new_variant).to receive(:currency=)
+
+            helper_host.assign_variant_prices(new_variant: new_variant, old_variant: old_variant)
+
+            expect(new_variant).not_to have_received(:price=)
+            expect(new_variant).not_to have_received(:currency=)
+          end
+        end
       end
     end
   end

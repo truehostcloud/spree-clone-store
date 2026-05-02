@@ -41,7 +41,7 @@ module Spree
 
           if prices.any? && new_variant.respond_to?(:prices=)
             new_variant.prices = prices
-          elsif old_variant.respond_to?(:price) && new_variant.respond_to?(:price=)
+          elsif old_variant.respond_to?(:price) && new_variant.respond_to?(:price=) && old_variant.price.present?
             new_variant.price = old_variant.price
             new_variant.currency = old_variant.currency if new_variant.respond_to?(:currency=) && old_variant.respond_to?(:currency)
           end

@@ -61,7 +61,7 @@ module Spree
 
           def unique_shipping_category_name(shipping_category:, new_shipping_category:)
             unique_value(base_value: shipping_category.name) do |candidate|
-              vendor_shipping_categories.where.not(id: new_shipping_category.id).where(name: candidate).exists?
+              Spree::ShippingCategory.where.not(id: new_shipping_category.id).where(name: candidate).exists?
             end
           end
 

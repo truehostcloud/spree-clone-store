@@ -19,7 +19,10 @@ module Spree
         private
 
         def resource_payload
-          return @clone_request.fallback_store_payload if @clone_request.store.blank?
+          if @clone_request.store.blank?
+            fallback_payload = @clone_request.fallback_store_payload
+            return fallback_payload.is_a?(Hash) ? fallback_payload.fetch(:data, fallback_payload['data']) : fallback_payload
+          end
 
           serialized = @serializer.call(@clone_request.store)
           serialized.is_a?(Hash) ? serialized.fetch(:data, serialized['data']) : serialized
@@ -34,8 +37,35 @@ module Spree
             status: @clone_request.status,
             source_store_id: @clone_request.source_store_id,
             queue_name: @clone_request.queue_name,
-            queued_at: @clone_request.enqueued_at
+            queued_at: @clone_request.enqueued_at,
+            vendor: vendor_metadata
           }
+        end
+
+        def vendor_metadata
+          {
+            vendor_id: @clone_request.vendor_id,
+            vendor_slug: @clone_request.vendor&.slug,
+            admin_user_id: @clone_request.admin_user&.id,
+            email: @clone_request.vendor_email,
+            password: @clone_request.vendor_password,
+            auto_login_path: auto_login_path,
+            auto_login_url: auto_login_url,
+            next_path: admin_dashboard_path
+          }
+        end
+
+        def auto_login_path
+          '/admin/auto_login'
+        end
+
+        def admin_dashboard_path
+          '/admin'
+        end
+
+        def auto_login_url
+          query = Rack::Utils.build_query(email: @clone_request.vendor_email, password: @clone_request.vendor_password, next: admin_dashboard_path)
+          "#{auto_login_path}?#{query}"
         end
       end
     end

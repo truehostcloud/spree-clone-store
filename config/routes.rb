@@ -4,6 +4,19 @@ Spree::Core::Engine.add_routes do
       namespace :platform do
         post '/clone-store', to: 'clone_stores#create'
         get '/clone-store/:clone_request_id', to: 'clone_stores#show'
+
+        namespace :ai do
+          resources :themes, only: %i[create show], param: :theme_id do
+            post :preview, on: :member
+            post :publish, on: :member
+            resources :versions, only: :create, controller: 'theme_versions'
+            resources :pages, only: :create, controller: 'theme_pages'
+          end
+
+          resources :pages, only: [], param: :page_id do
+            resources :sections, only: :create, controller: 'page_sections'
+          end
+        end
       end
     end
   end
