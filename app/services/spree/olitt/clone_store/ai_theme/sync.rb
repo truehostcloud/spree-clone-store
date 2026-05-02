@@ -231,7 +231,7 @@ module Spree
           def assign_theme_attributes(theme, payload)
             assign_if_possible(theme, :name, payload[:name]) if payload[:name].present?
             assign_if_possible(theme, :store, @store) if @store.present? && theme.respond_to?(:store=)
-            assign_if_possible(theme, :default, false) if theme.respond_to?(:default=)
+            assign_if_possible(theme, :default, payload.fetch(:default, false)) if theme.respond_to?(:default=)
             assign_if_possible(theme, :ready, false) if theme.respond_to?(:ready=)
           end
 
@@ -494,11 +494,11 @@ module Spree
             page_class.where(pageable: theme)
           end
 
-          def with_transaction(record)
+          def with_transaction(record, &block)
             if record.respond_to?(:class) && record.class.respond_to?(:transaction)
-              record.class.transaction { yield }
+              record.class.transaction(&block)
             else
-              yield
+              block.call
             end
           end
 
@@ -514,13 +514,6 @@ module Spree
             end
 
             theme_class.new
-          end
-
-          def assign_theme_attributes(theme, payload)
-            assign_if_possible(theme, :name, payload[:name]) if payload[:name].present?
-            assign_if_possible(theme, :store, @store) if @store.present? && theme.respond_to?(:store=)
-            assign_if_possible(theme, :default, payload.fetch(:default, false)) if theme.respond_to?(:default=)
-            assign_if_possible(theme, :ready, false) if theme.respond_to?(:ready=)
           end
 
           def default_status(theme)
