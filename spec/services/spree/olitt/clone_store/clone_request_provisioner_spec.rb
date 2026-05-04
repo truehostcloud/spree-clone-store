@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Spree::Olitt::CloneStore::CloneRequestProvisioner do
   describe '#call' do
-    it 'provisions an admin user and links it to the vendor for autologin' do
+    it 'provisions an admin user and links it to the vendor' do
       source_store = create(:store, default: false, url: 'source.example.com', code: 'source-store')
       clone_request = Spree::Olitt::CloneStore::CloneRequest.create!(
         source_store: source_store,

@@ -48,24 +48,12 @@ module Spree
             vendor_slug: @clone_request.vendor&.slug,
             admin_user_id: @clone_request.admin_user&.id,
             email: @clone_request.vendor_email,
-            password: @clone_request.vendor_password,
-            auto_login_path: auto_login_path,
-            auto_login_url: auto_login_url,
             next_path: admin_dashboard_path
           }
         end
 
-        def auto_login_path
-          '/admin/auto_login'
-        end
-
         def admin_dashboard_path
           '/admin'
-        end
-
-        def auto_login_url
-          query = Rack::Utils.build_query(email: @clone_request.vendor_email, password: @clone_request.vendor_password, next: admin_dashboard_path)
-          "#{auto_login_path}?#{query}"
         end
       end
     end

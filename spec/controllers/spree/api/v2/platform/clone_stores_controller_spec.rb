@@ -41,7 +41,7 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
     ActiveJob::Base.queue_adapter = :test
   end
 
-  it 'clones a store with products and returns vendor autologin details' do
+  it 'clones a store with products and returns vendor metadata' do
     post :create, params: clone_params, format: :json
 
     expect(response).to have_http_status(:accepted)
@@ -62,11 +62,7 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
     vendor_meta = payload.fetch('meta').fetch('vendor')
     expect(vendor_meta).to include(
       'email' => 'clone.vendor@example.com',
-      'password' => 'Password123!',
-      'auto_login_path' => '/admin/auto_login',
       'next_path' => '/admin'
     )
-    expect(vendor_meta.fetch('auto_login_url')).to include('email=clone.vendor%40example.com')
-    expect(vendor_meta.fetch('auto_login_url')).to include('password=Password123%21')
   end
 end

@@ -17,7 +17,6 @@ describe Spree::Olitt::CloneStore::CloneRequestPresenter do
         error_message: nil,
         vendor_id: 11,
         vendor_email: 'vendor@example.com',
-        vendor_password: 'secret123',
         vendor: instance_double(Spree::Vendor, slug: 'vendor-slug'),
         admin_user: instance_double(Spree.admin_user_class, id: 77),
         store: nil,
@@ -41,9 +40,6 @@ describe Spree::Olitt::CloneStore::CloneRequestPresenter do
           vendor_slug: 'vendor-slug',
           admin_user_id: 77,
           email: 'vendor@example.com',
-          password: 'secret123',
-          auto_login_path: '/admin/auto_login',
-          auto_login_url: '/admin/auto_login?email=vendor%40example.com&password=secret123&next=%2Fadmin',
           next_path: '/admin'
         }
       })
