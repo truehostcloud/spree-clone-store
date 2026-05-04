@@ -113,7 +113,7 @@ module Spree
         end
 
         def copy_legacy_admin_user_attributes(admin_user, legacy_user)
-          return unless legacy_user.present?
+          return if legacy_user.blank?
 
           admin_user.first_name ||= legacy_user.first_name if admin_user.respond_to?(:first_name=)
           admin_user.last_name ||= legacy_user.last_name if admin_user.respond_to?(:last_name=)

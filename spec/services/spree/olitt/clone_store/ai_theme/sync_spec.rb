@@ -3,6 +3,7 @@ require 'spec_helper'
 module AiThemeSyncSpecSupport
   class FakeCollection
     attr_reader :records
+    delegate :size, to: :records
 
     def initialize(klass)
       @klass = klass
@@ -34,10 +35,6 @@ module AiThemeSyncSpecSupport
 
     def map(&block)
       records.map(&block)
-    end
-
-    def size
-      records.size
     end
 
     def to_a

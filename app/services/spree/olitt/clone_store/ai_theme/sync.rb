@@ -518,7 +518,7 @@ module Spree
             if record.respond_to?(:class) && record.class.respond_to?(:transaction)
               record.class.transaction(&block)
             else
-              block.call
+              yield
             end
           end
 
