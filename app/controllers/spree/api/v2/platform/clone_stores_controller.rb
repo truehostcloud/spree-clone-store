@@ -60,8 +60,8 @@ module Spree
           end
 
           def authenticate_secret_key!
-            @current_api_key = Spree::ApiKey.find_by_secret_token(extract_api_key)
-            @current_api_key = nil if @current_api_key && (!current_store.present? || @current_api_key.store_id != current_store.id)
+            @current_api_key = Spree::ApiKey.find_by(token_digest: Spree::ApiKey.compute_token_digest(extract_api_key))
+            @current_api_key = nil if @current_api_key && (current_store.blank? || @current_api_key.store_id != current_store.id)
 
             unless @current_api_key
               render_api_error('Valid secret API key required', :unauthorized)
