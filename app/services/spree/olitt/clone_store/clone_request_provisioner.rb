@@ -91,24 +91,42 @@ module Spree
         end
 
         def find_or_create_admin_user(email, password, legacy_user: nil)
-          admin_user = existing_admin_user(email) || Spree.admin_user_class.find_or_initialize_by(email: email)
+          admin_user = build_admin_user(email)
           revive_admin_user!(admin_user) if admin_user.present?
           return [admin_user, false] if admin_user.persisted?
 
+          configure_admin_user(admin_user, email, password, legacy_user)
+          persist_admin_user(admin_user)
+        rescue ActiveRecord::RecordNotUnique
+          recover_existing_admin_user(email)
+        end
+
+        def build_admin_user(email)
+          existing_admin_user(email) || Spree.admin_user_class.find_or_initialize_by(email: email)
+        end
+
+        def configure_admin_user(admin_user, email, password, legacy_user)
           admin_user.login ||= email if admin_user.respond_to?(:login=)
           admin_user.password = password
           admin_user.password_confirmation = password if admin_user.respond_to?(:password_confirmation=)
+          copy_legacy_admin_user_attributes(admin_user, legacy_user)
+        end
 
-          if legacy_user.present?
-            admin_user.first_name ||= legacy_user.first_name if admin_user.respond_to?(:first_name=)
-            admin_user.last_name ||= legacy_user.last_name if admin_user.respond_to?(:last_name=)
-            admin_user.selected_locale ||= legacy_user.selected_locale if admin_user.respond_to?(:selected_locale=)
-          end
+        def copy_legacy_admin_user_attributes(admin_user, legacy_user)
+          return unless legacy_user.present?
 
+          admin_user.first_name ||= legacy_user.first_name if admin_user.respond_to?(:first_name=)
+          admin_user.last_name ||= legacy_user.last_name if admin_user.respond_to?(:last_name=)
+          admin_user.selected_locale ||= legacy_user.selected_locale if admin_user.respond_to?(:selected_locale=)
+        end
+
+        def persist_admin_user(admin_user)
           admin_user.save!
 
           [admin_user, true]
-        rescue ActiveRecord::RecordNotUnique
+        end
+
+        def recover_existing_admin_user(email)
           admin_user = existing_admin_user(email)
           revive_admin_user!(admin_user) if admin_user.present?
           return [admin_user, false] if admin_user.present?

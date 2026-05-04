@@ -261,14 +261,34 @@ module Spree
           end
 
           def assign_page_attributes(page, payload, theme)
+            assign_page_relationship(page, theme)
+            assign_page_identity(page, payload)
+            assign_page_metadata(page, payload)
+            assign_page_preferences(page, payload)
+            assign_page_type(page, payload)
+          end
+
+          def assign_page_relationship(page, theme)
             assign_if_possible(page, :pageable, theme) if page.respond_to?(:pageable=)
+          end
+
+          def assign_page_identity(page, payload)
             assign_if_possible(page, :name, payload[:name].presence || payload[:title].presence || default_name(payload))
             assign_if_possible(page, :slug, payload[:slug].presence || parameterize_identifier(payload[:name] || payload[:title] || default_name(payload))) if page.respond_to?(:slug=)
+          end
+
+          def assign_page_metadata(page, payload)
             assign_if_possible(page, :meta_title, payload[:meta_title]) if payload.key?(:meta_title) && page.respond_to?(:meta_title=)
             assign_if_possible(page, :meta_description, payload[:meta_description]) if payload.key?(:meta_description) && page.respond_to?(:meta_description=)
             assign_if_possible(page, :meta_keywords, payload[:meta_keywords]) if payload.key?(:meta_keywords) && page.respond_to?(:meta_keywords=)
             assign_if_possible(page, :visible, payload.fetch(:visible, true)) if page.respond_to?(:visible=)
+          end
+
+          def assign_page_preferences(page, payload)
             assign_if_possible(page, :preferences, merge_preferences(page.preferences, 'ai_theme' => page_spec_payload(payload))) if page.respond_to?(:preferences=)
+          end
+
+          def assign_page_type(page, payload)
             assign_if_possible(page, :type, resolve_page_class(payload).name) if page.respond_to?(:type=)
           end
 
