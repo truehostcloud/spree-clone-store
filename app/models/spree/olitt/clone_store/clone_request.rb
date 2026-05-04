@@ -18,10 +18,18 @@ module Spree
         belongs_to :source_store, class_name: 'Spree::Store'
         belongs_to :store, class_name: 'Spree::Store', optional: true
         belongs_to :vendor, class_name: 'Spree::Vendor', optional: true
-        belongs_to :user, class_name: Spree.user_class.to_s, optional: true
+        belongs_to :admin_user, class_name: Spree.admin_user_class.to_s, foreign_key: :user_id, optional: true
         belongs_to :role_user, class_name: 'Spree::RoleUser', optional: true
 
         validates :store_name, :store_url, :store_code, :store_mail_from_address, :vendor_email, :vendor_password, presence: true
+
+        def user
+          admin_user
+        end
+
+        def user=(value)
+          self.admin_user = value
+        end
 
         def mark_enqueued!(job)
           update!(
@@ -48,7 +56,7 @@ module Spree
         def cleanup_failed_clone!
           cloned_store = store
           assigned_role_user = created_role_user? ? role_user : nil
-          assigned_user = created_user? ? user : nil
+          assigned_admin_user = created_user? ? admin_user : nil
           assigned_vendor = created_vendor? ? vendor : nil
 
           update_columns(store_id: nil, role_user_id: nil, user_id: nil, vendor_id: nil)
@@ -56,9 +64,9 @@ module Spree
           cloned_store&.destroy!
           assigned_role_user&.destroy!
 
-          if assigned_user.present?
-            assigned_user.reload
-            assigned_user.destroy! if assigned_user.role_users.reload.none?
+          if assigned_admin_user.present?
+            assigned_admin_user.reload
+            assigned_admin_user.destroy! if assigned_admin_user.role_users.reload.none?
           end
 
           if assigned_vendor.present?

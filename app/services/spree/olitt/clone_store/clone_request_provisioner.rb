@@ -12,9 +12,15 @@ module Spree
         def call
           ActiveRecord::Base.transaction do
             source_store = @clone_request.source_store
+            legacy_user = existing_legacy_user(@clone_request.vendor_email)
             vendor, created_vendor = find_or_create_vendor(@clone_request.vendor_email)
-            user, created_user = find_or_create_user(@clone_request.vendor_email, @clone_request.vendor_password)
-            role_user, created_role_user = assign_vendor_role(user, vendor)
+            admin_user, created_user = find_or_create_admin_user(
+              @clone_request.vendor_email,
+              @clone_request.vendor_password,
+              legacy_user: legacy_user
+            )
+            role_user, created_role_user = assign_vendor_role(admin_user, vendor)
+            link_admin_user_to_vendor!(vendor: vendor, admin_user: admin_user, legacy_user: legacy_user)
 
             activate_vendor(vendor)
 
@@ -24,7 +30,7 @@ module Spree
             @clone_request.update!(
               store: store,
               vendor: vendor,
-              user: user,
+              admin_user: admin_user,
               role_user: role_user,
               created_vendor: @clone_request.created_vendor? || created_vendor,
               created_user: @clone_request.created_user? || created_user,
@@ -84,36 +90,80 @@ module Spree
           raise
         end
 
-        def find_or_create_user(email, password)
-          user = existing_user(email) || Spree.user_class.find_or_initialize_by(email: email)
-          revive_user!(user) if user.present?
-          return [user, false] if user.persisted?
+        def find_or_create_admin_user(email, password, legacy_user: nil)
+          admin_user = build_admin_user(email)
+          revive_admin_user!(admin_user) if admin_user.present?
+          return [admin_user, false] if admin_user.persisted?
 
-          user.password = password
-          user.password_confirmation = password
-          user.save!
-
-          [user, true]
+          configure_admin_user(admin_user, email, password, legacy_user)
+          persist_admin_user(admin_user)
         rescue ActiveRecord::RecordNotUnique
-          user = existing_user(email)
-          revive_user!(user) if user.present?
-          return [user, false] if user.present?
+          recover_existing_admin_user(email)
+        end
+
+        def build_admin_user(email)
+          existing_admin_user(email) || Spree.admin_user_class.find_or_initialize_by(email: email)
+        end
+
+        def configure_admin_user(admin_user, email, password, legacy_user)
+          admin_user.login ||= email if admin_user.respond_to?(:login=)
+          admin_user.password = password
+          admin_user.password_confirmation = password if admin_user.respond_to?(:password_confirmation=)
+          copy_legacy_admin_user_attributes(admin_user, legacy_user)
+        end
+
+        def copy_legacy_admin_user_attributes(admin_user, legacy_user)
+          return if legacy_user.blank?
+
+          admin_user.first_name ||= legacy_user.first_name if admin_user.respond_to?(:first_name=)
+          admin_user.last_name ||= legacy_user.last_name if admin_user.respond_to?(:last_name=)
+          admin_user.selected_locale ||= legacy_user.selected_locale if admin_user.respond_to?(:selected_locale=)
+        end
+
+        def persist_admin_user(admin_user)
+          admin_user.save!
+
+          [admin_user, true]
+        end
+
+        def recover_existing_admin_user(email)
+          admin_user = existing_admin_user(email)
+          revive_admin_user!(admin_user) if admin_user.present?
+          return [admin_user, false] if admin_user.present?
 
           raise
         end
 
-        def assign_vendor_role(user, vendor)
+        def assign_vendor_role(admin_user, vendor)
           vendor_role_name = defined?(Spree::Vendor::DEFAULT_VENDOR_ROLE) ? Spree::Vendor::DEFAULT_VENDOR_ROLE : 'vendor'
-          vendor_role = Spree::Role.find_or_create_by!(name: vendor_role_name)
-          role_user = Spree::RoleUser.find_by(user: user, role: vendor_role, resource: vendor)
+          vendor_role = vendor.respond_to?(:default_user_role) ? (vendor.default_user_role || Spree::Role.find_or_create_by!(name: vendor_role_name)) : Spree::Role.find_or_create_by!(name: vendor_role_name)
+          role_user = Spree::RoleUser.find_by(user: admin_user, role: vendor_role, resource: vendor)
           return [role_user, false] if role_user.present?
 
-          [Spree::RoleUser.create!(user: user, role: vendor_role, resource: vendor), true]
+          [Spree::RoleUser.create!(user: admin_user, role: vendor_role, resource: vendor), true]
         rescue ActiveRecord::RecordNotUnique
-          role_user = Spree::RoleUser.find_by(user: user, role: vendor_role, resource: vendor)
+          role_user = Spree::RoleUser.find_by(user: admin_user, role: vendor_role, resource: vendor)
           return [role_user, false] if role_user.present?
 
           raise
+        end
+
+        def link_admin_user_to_vendor!(vendor:, admin_user:, legacy_user: nil)
+          return unless defined?(Spree::VendorUser)
+          return unless ActiveRecord::Base.connection.data_source_exists?('spree_vendor_users')
+
+          vendor_user = if legacy_user.present?
+            Spree::VendorUser.find_by(vendor_id: vendor.id, user_id: legacy_user.id)
+          end
+
+          if vendor_user.nil? && Spree::VendorUser.column_names.include?('admin_user_id')
+            vendor_user = Spree::VendorUser.find_by(vendor_id: vendor.id, admin_user_id: admin_user.id)
+          end
+
+          vendor_user ||= Spree::VendorUser.new(vendor_id: vendor.id)
+          vendor_user.user_id = legacy_user.id if legacy_user.present? && vendor_user.respond_to?(:user_id=) && vendor_user.user_id.blank?
+          vendor_user.admin_user_id = admin_user.id if vendor_user.respond_to?(:admin_user_id=)
+          vendor_user.save! if vendor_user.new_record? || vendor_user.changed?
         end
 
         def activate_vendor(vendor)
@@ -127,7 +177,13 @@ module Spree
           ::Spree::Vendor.unscoped.find_by(notification_email: email) || ::Spree::Vendor.unscoped.find_by(name: email)
         end
 
-        def existing_user(email)
+        def existing_admin_user(email)
+          Spree.admin_user_class.unscoped.find_by(email: email)
+        end
+
+        def existing_legacy_user(email)
+          return nil if Spree.user_class == Spree.admin_user_class
+
           Spree.user_class.unscoped.find_by(email: email)
         end
 
@@ -142,10 +198,10 @@ module Spree
           vendor.update_columns(deleted_at: nil, updated_at: Time.current)
         end
 
-        def revive_user!(user)
-          return if user.blank? || !user.respond_to?(:deleted_at) || user.deleted_at.blank?
+        def revive_admin_user!(admin_user)
+          return if admin_user.blank? || !admin_user.respond_to?(:deleted_at) || admin_user.deleted_at.blank?
 
-          user.update_columns(deleted_at: nil, updated_at: Time.current)
+          admin_user.update!(deleted_at: nil, updated_at: Time.current)
         end
       end
     end

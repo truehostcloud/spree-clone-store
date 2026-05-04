@@ -39,6 +39,13 @@ describe Spree::Olitt::CloneStore::CloneStoreController, type: :controller do
     it 'I can get source store id' do
       expect(controller.source_id_param).to eq(store.id.to_s)
     end
+
+    it 'falls back to the default store when source_store_id is missing' do
+      allow(params).to receive(:[]).with(:clone_store).and_return(ActionController::Parameters.new({ store: { name: 'Local Test Store', url: 'local.test', code: 'local_test', mail_from_address: 'spree@example.com' }, vendor: { email: 'vendor@example.com', password: 'secret123', password_confirmation: 'secret123' } }))
+      allow(Spree::Store).to receive(:default).and_return(store)
+
+      expect(controller.source_id_param).to eq(store.id)
+    end
   end
 
   # Store

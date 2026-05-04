@@ -14,7 +14,7 @@ module Spree
         def call
           validate_vendor_params!
 
-          source_store = Spree::Store.find(@source_store_id)
+          source_store = resolved_source_store
 
           CloneRequest.create!(
             source_store: source_store,
@@ -63,6 +63,13 @@ module Spree
         def extract_record_not_unique_message(error)
           raw_message = error.cause&.message.presence || error.message
           raw_message.to_s.sub(/\AMysql2::Error:\s*/i, '')
+        end
+
+        def resolved_source_store
+          return @source_store if @source_store.present?
+
+          source_store_id = @source_store_id.presence || Spree::Store.default&.id
+          Spree::Store.find(source_store_id)
         end
       end
     end

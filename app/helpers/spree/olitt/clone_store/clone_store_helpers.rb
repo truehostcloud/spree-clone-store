@@ -18,7 +18,7 @@ module Spree
         end
 
         def source_id_param
-          clone_store_payload.require(:source_store_id)
+          clone_store_payload[:source_store_id].presence || Spree::Store.default&.id
         end
 
         def resource_serializer

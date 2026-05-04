@@ -5,6 +5,8 @@ module Spree
         class CloneStoresController < Spree::Olitt::CloneStore::CloneStoreController
           skip_forgery_protection
 
+          attr_reader :current_api_key
+
           rescue_from Doorkeeper::Errors::DoorkeeperError, with: :render_unauthorized
           rescue_from ActiveRecord::RecordNotUnique, with: :render_bad_request_exception
           rescue_from ActiveRecord::RecordInvalid, with: :render_record_invalid
@@ -25,11 +27,17 @@ module Spree
           private
 
           def authorize_clone_store_request!
+            if api_key_header_present?
+              authenticate_secret_key!
+              return
+            end
+
             scopes = action_name == 'show' ? %i[read admin] : %i[write admin]
             doorkeeper_authorize!(*scopes)
           end
 
           def authorize_superadmin_user_token!
+            return if current_api_key.present?
             return if spree_current_user.nil?
             return if superuser_with_global_admin_role?(spree_current_user)
 
@@ -45,9 +53,37 @@ module Spree
           end
 
           def validate_token_client
+            return if api_key_header_present?
             return if doorkeeper_token.nil?
 
             raise Doorkeeper::Errors::DoorkeeperError if doorkeeper_token.application.nil?
+          end
+
+          def authenticate_secret_key!
+            @current_api_key = Spree::ApiKey.find_by(token_digest: Spree::ApiKey.compute_token_digest(extract_api_key))
+            @current_api_key = nil if @current_api_key && (current_store.blank? || @current_api_key.store_id != current_store.id)
+
+            unless @current_api_key
+              render_api_error('Valid secret API key required', :unauthorized)
+              return false
+            end
+
+            touch_api_key_if_needed(@current_api_key)
+            true
+          end
+
+          def touch_api_key_if_needed(api_key)
+            return if api_key.last_used_at.present? && api_key.last_used_at > 1.hour.ago
+
+            Spree::ApiKeys::MarkAsUsed.perform_later(api_key.id, Time.current)
+          end
+
+          def extract_api_key
+            request.headers['X-Spree-Api-Key'].presence
+          end
+
+          def api_key_header_present?
+            extract_api_key.present?
           end
 
           def render_api_error(message, status)
