@@ -65,4 +65,33 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
       'next_path' => '/admin'
     )
   end
+
+  describe 'secret API key authentication' do
+    let(:api_key) { instance_double('Spree::ApiKey', id: 44, store_id: source_store.id, last_used_at: nil) }
+
+    it 'accepts X-Spree-Api-Key without doorkeeper auth' do
+      request.headers['X-Spree-Api-Key'] = 'sk_test_123'
+
+      allow(controller).to receive(:current_store).and_return(source_store)
+      allow(Spree::ApiKey).to receive(:find_by_secret_token).with('sk_test_123').and_return(api_key)
+      allow(Spree::ApiKeys::MarkAsUsed).to receive(:perform_later)
+      expect(controller).not_to receive(:doorkeeper_authorize!)
+
+      controller.send(:authorize_clone_store_request!)
+
+      expect(controller.send(:current_api_key)).to eq(api_key)
+    end
+
+    it 'renders unauthorized for an invalid X-Spree-Api-Key' do
+      request.headers['X-Spree-Api-Key'] = 'sk_invalid'
+
+      allow(controller).to receive(:current_store).and_return(source_store)
+      allow(Spree::ApiKey).to receive(:find_by_secret_token).with('sk_invalid').and_return(nil)
+
+      controller.send(:authorize_clone_store_request!)
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(JSON.parse(response.body)).to eq('error' => 'Valid secret API key required')
+    end
+  end
 end

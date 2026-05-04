@@ -18,7 +18,7 @@ module Spree
         belongs_to :source_store, class_name: 'Spree::Store'
         belongs_to :store, class_name: 'Spree::Store', optional: true
         belongs_to :vendor, class_name: 'Spree::Vendor', optional: true
-        belongs_to :admin_user, class_name: Spree.admin_user_class.to_s, foreign_key: :user_id, optional: true, inverse_of: :clone_requests
+        belongs_to :admin_user, class_name: Spree.admin_user_class.to_s, foreign_key: :user_id, optional: true
         belongs_to :role_user, class_name: 'Spree::RoleUser', optional: true
 
         validates :store_name, :store_url, :store_code, :store_mail_from_address, :vendor_email, :vendor_password, presence: true
