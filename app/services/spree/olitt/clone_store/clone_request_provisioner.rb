@@ -201,7 +201,7 @@ module Spree
         def revive_admin_user!(admin_user)
           return if admin_user.blank? || !admin_user.respond_to?(:deleted_at) || admin_user.deleted_at.blank?
 
-          admin_user.update_columns(deleted_at: nil, updated_at: Time.current)
+          admin_user.update!(deleted_at: nil, updated_at: Time.current)
         end
       end
     end

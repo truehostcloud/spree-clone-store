@@ -4,7 +4,8 @@ module Spree
       base.has_many :clone_requests,
                     class_name: 'Spree::Olitt::CloneStore::CloneRequest',
                     foreign_key: :user_id,
-                    inverse_of: :admin_user
+                    inverse_of: :admin_user,
+                    dependent: :nullify
     end
   end
 end
