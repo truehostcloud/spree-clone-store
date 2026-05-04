@@ -126,13 +126,13 @@ module Spree
             base_name = old_location.name.presence || @new_store.name
 
             unique_value(base_value: base_name) do |candidate|
-              Spree::StockLocation.where.not(id: new_location.id).where(name: candidate).exists?
+              @vendor.stock_locations.where.not(id: new_location.id).where(name: candidate).exists?
             end
           end
 
           def unique_fallback_stock_location_name(new_location:)
             unique_value(base_value: DEFAULT_STOCK_LOCATION_NAME) do |candidate|
-              Spree::StockLocation.where.not(id: new_location.id).where(name: candidate).exists?
+              @vendor.stock_locations.where.not(id: new_location.id).where(name: candidate).exists?
             end
           end
 
