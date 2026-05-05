@@ -216,7 +216,7 @@ module Spree
             Spree::VendorUser.find_by(vendor_id: vendor.id, user_id: legacy_user.id)
           end
 
-          if vendor_user.nil? && Spree::VendorUser.column_names.include?('admin_user_id')
+          if vendor_user.nil?
             vendor_user = Spree::VendorUser.find_by(vendor_id: vendor.id, admin_user_id: admin_user.id)
           end
 
