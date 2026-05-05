@@ -14,9 +14,10 @@ module Spree
             source_store = @clone_request.source_store
             legacy_user = existing_legacy_user(@clone_request.vendor_email)
             vendor, created_vendor = find_or_create_vendor(@clone_request.vendor_email)
-            admin_user, created_user = find_or_create_admin_user(
-              @clone_request.vendor_email,
-              @clone_request.vendor_password,
+            admin_user, created_user = resolve_admin_user_for_vendor(
+              vendor: vendor,
+              email: @clone_request.vendor_email,
+              password: @clone_request.vendor_password,
               legacy_user: legacy_user
             )
             role_user, created_role_user = assign_vendor_role(admin_user, vendor)
@@ -160,10 +161,29 @@ module Spree
             vendor_user = Spree::VendorUser.find_by(vendor_id: vendor.id, admin_user_id: admin_user.id)
           end
 
+          vendor_user ||= Spree::VendorUser.find_by(vendor_id: vendor.id, admin_user_id: nil)
+
           vendor_user ||= Spree::VendorUser.new(vendor_id: vendor.id)
-          vendor_user.user_id = legacy_user.id if legacy_user.present? && vendor_user.respond_to?(:user_id=) && vendor_user.user_id.blank?
           vendor_user.admin_user_id = admin_user.id if vendor_user.respond_to?(:admin_user_id=)
           vendor_user.save! if vendor_user.new_record? || vendor_user.changed?
+        end
+
+        def resolve_admin_user_for_vendor(vendor:, email:, password:, legacy_user: nil)
+          vendor_user = existing_admin_vendor_link(vendor)
+          if vendor_user.present? && vendor_user.admin_user_id.present?
+            admin_user = Spree.admin_user_class.find_by(id: vendor_user.admin_user_id)
+            return [admin_user, false] if admin_user.present?
+          end
+
+          find_or_create_admin_user(email, password, legacy_user: legacy_user)
+        end
+
+        def existing_admin_vendor_link(vendor)
+          return nil unless defined?(Spree::VendorUser)
+          return nil unless ActiveRecord::Base.connection.data_source_exists?('spree_vendor_users')
+
+          Spree::VendorUser.where(vendor_id: vendor.id).where.not(admin_user_id: nil).first ||
+            Spree::VendorUser.find_by(vendor_id: vendor.id, admin_user_id: nil)
         end
 
         def activate_vendor(vendor)
