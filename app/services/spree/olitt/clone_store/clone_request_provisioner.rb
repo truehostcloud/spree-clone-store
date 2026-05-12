@@ -27,6 +27,7 @@ module Spree
 
             store = @clone_request.store || build_store(source_store: source_store, vendor: vendor)
             store.save! unless store.persisted?
+            ensure_public_api_key!(store)
 
             @clone_request.update!(
               store: store,
@@ -191,6 +192,13 @@ module Spree
 
           vendor.start_onboarding! if vendor.respond_to?(:start_onboarding!) && vendor.state == 'invited'
           vendor.approve! if vendor.respond_to?(:approve!) && !%w[active approved].include?(vendor.state)
+        end
+
+        def ensure_public_api_key!(store)
+          return unless store.respond_to?(:api_keys)
+
+          store.api_keys.active.publishable.first ||
+            store.api_keys.create!(name: 'Storefront key', key_type: 'publishable')
         end
 
         def existing_vendor(email)
