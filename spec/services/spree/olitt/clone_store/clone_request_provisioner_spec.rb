@@ -27,6 +27,7 @@ describe Spree::Olitt::CloneStore::CloneRequestProvisioner do
       expect(Spree::RoleUser.exists?(user: clone_request.admin_user, resource: clone_request.vendor)).to be(true)
       expect(Spree::VendorUser.exists?(vendor: clone_request.vendor, admin_user: clone_request.admin_user)).to be(true)
       expect(clone_request.store.vendor_id).to eq(clone_request.vendor.id)
+      expect(clone_request.store.api_keys.active.publishable.count).to be >= 1
     end
   end
 end

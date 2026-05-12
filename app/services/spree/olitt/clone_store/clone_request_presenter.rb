@@ -38,7 +38,21 @@ module Spree
             source_store_id: @clone_request.source_store_id,
             queue_name: @clone_request.queue_name,
             queued_at: @clone_request.enqueued_at,
-            vendor: vendor_metadata
+            vendor: vendor_metadata,
+            public_api_key: public_api_key_metadata
+          }
+        end
+
+        def public_api_key_metadata
+          api_key = public_api_key
+          return nil unless api_key
+
+          {
+            id: api_key.id,
+            name: api_key.name,
+            key_type: api_key.key_type,
+            token: api_key.token,
+            store_id: api_key.store_id
           }
         end
 
@@ -54,6 +68,15 @@ module Spree
 
         def admin_dashboard_path
           '/admin'
+        end
+
+        def public_api_key
+          store = @clone_request.store
+          return nil if store.blank? || !store.respond_to?(:api_keys)
+
+          store.api_keys.active.publishable.order(created_at: :desc).first
+        rescue StandardError
+          nil
         end
       end
     end
