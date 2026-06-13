@@ -94,4 +94,73 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
       expect(JSON.parse(response.body)).to eq('error' => 'Valid secret API key required')
     end
   end
+
+  describe '#ensure_api_key' do
+    let!(:live_store) do
+      create(:store, default: false, name: 'Live Store', url: 'live.example.com', code: 'live-store')
+    end
+
+    before do
+      allow(Spree.current_store_finder).to receive(:new).and_return(
+        instance_double(Spree.current_store_finder, execute: live_store)
+      )
+    end
+
+    it 'mints a publishable key for the resolved store and returns it' do
+      expect(live_store.api_keys.active.publishable.count).to eq(0)
+
+      post :ensure_api_key, params: { url: 'live.example.com' }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      payload = JSON.parse(response.body)
+      expect(payload.dig('data', 'id')).to eq(live_store.id.to_s)
+      expect(payload.dig('meta', 'status')).to eq('completed')
+      expect(payload.dig('meta', 'public_api_key', 'token')).to be_present
+      expect(payload.dig('meta', 'public_api_key', 'store_id')).to eq(live_store.id)
+      expect(live_store.api_keys.active.publishable.count).to eq(1)
+    end
+
+    it 'is idempotent and returns the same key on a second call' do
+      post :ensure_api_key, params: { url: 'live.example.com' }, format: :json
+      first_token = JSON.parse(response.body).dig('meta', 'public_api_key', 'token')
+
+      post :ensure_api_key, params: { url: 'live.example.com' }, format: :json
+      second_token = JSON.parse(response.body).dig('meta', 'public_api_key', 'token')
+
+      expect(second_token).to eq(first_token)
+      expect(live_store.api_keys.active.publishable.count).to eq(1)
+    end
+
+    it 'returns not found when no store resolves for the url' do
+      allow(Spree.current_store_finder).to receive(:new).and_return(
+        instance_double(Spree.current_store_finder, execute: nil)
+      )
+
+      post :ensure_api_key, params: { url: 'missing.example.com' }, format: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(JSON.parse(response.body).dig('meta', 'status')).to eq('not_found')
+    end
+  end
+
+  describe '#ensure_api_key duplicate store resolution' do
+    let!(:older_store) do
+      create(:store, default: false, name: 'Older Store', url: 'conflict.example.com', code: 'older-store')
+    end
+
+    let!(:newer_store) do
+      create(:store, default: false, name: 'Newer Store', url: 'conflict.example.com', code: 'newer-store')
+    end
+
+    it 'mints the key on the oldest store when two stores share the same url' do
+      post :ensure_api_key, params: { url: 'conflict.example.com' }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      payload = JSON.parse(response.body)
+      expect(payload.dig('data', 'id')).to eq(older_store.id.to_s)
+      expect(payload.dig('meta', 'public_api_key', 'store_id')).to eq(older_store.id)
+      expect(older_store.reload.api_keys.active.publishable.count).to eq(1)
+      expect(newer_store.reload.api_keys.active.publishable.count).to eq(0)
+    end
+  end
 end
