@@ -113,7 +113,7 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
 
       expect(response).to have_http_status(:ok)
       payload = JSON.parse(response.body)
-      expect(payload.dig('data', 'id')).to eq(live_store.id)
+      expect(payload.dig('data', 'id')).to eq(live_store.id.to_s)
       expect(payload.dig('meta', 'status')).to eq('completed')
       expect(payload.dig('meta', 'public_api_key', 'token')).to be_present
       expect(payload.dig('meta', 'public_api_key', 'store_id')).to eq(live_store.id)
@@ -157,7 +157,7 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
 
       expect(response).to have_http_status(:ok)
       payload = JSON.parse(response.body)
-      expect(payload.dig('data', 'id')).to eq(older_store.id)
+      expect(payload.dig('data', 'id')).to eq(older_store.id.to_s)
       expect(payload.dig('meta', 'public_api_key', 'store_id')).to eq(older_store.id)
       expect(older_store.reload.api_keys.active.publishable.count).to eq(1)
       expect(newer_store.reload.api_keys.active.publishable.count).to eq(0)
