@@ -142,4 +142,25 @@ describe Spree::Api::V2::Platform::CloneStoresController, type: :controller do
       expect(JSON.parse(response.body).dig('meta', 'status')).to eq('not_found')
     end
   end
+
+  describe '#ensure_api_key duplicate store resolution' do
+    let!(:older_store) do
+      create(:store, default: false, name: 'Older Store', url: 'conflict.example.com', code: 'older-store')
+    end
+
+    let!(:newer_store) do
+      create(:store, default: false, name: 'Newer Store', url: 'conflict.example.com', code: 'newer-store')
+    end
+
+    it 'mints the key on the oldest store when two stores share the same url' do
+      post :ensure_api_key, params: { url: 'conflict.example.com' }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      payload = JSON.parse(response.body)
+      expect(payload.dig('data', 'id')).to eq(older_store.id)
+      expect(payload.dig('meta', 'public_api_key', 'store_id')).to eq(older_store.id)
+      expect(older_store.reload.api_keys.active.publishable.count).to eq(1)
+      expect(newer_store.reload.api_keys.active.publishable.count).to eq(0)
+    end
+  end
 end
