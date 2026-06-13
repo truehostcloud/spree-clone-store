@@ -13,10 +13,10 @@ module Spree
         def call
           return nil unless @store.respond_to?(:api_keys)
 
-          @store.api_keys.active.publishable.first ||
+          @store.api_keys.active.publishable.order(created_at: :desc).first ||
             @store.api_keys.create!(name: 'Storefront key', key_type: 'publishable')
         rescue ActiveRecord::RecordNotUnique
-          @store.api_keys.active.publishable.first
+          @store.api_keys.active.publishable.order(created_at: :desc).first
         end
       end
     end

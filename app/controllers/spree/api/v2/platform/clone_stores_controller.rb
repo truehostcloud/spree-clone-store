@@ -35,7 +35,10 @@ module Spree
           private
 
           def resolve_ensure_api_key_store
-            Spree.current_store_finder.new(url: params[:url].presence).execute
+            url = params[:url].to_s.strip
+            return nil if url.blank?
+
+            Spree.current_store_finder.new(url: url).execute
           end
 
           def render_ensure_api_key_store_not_found
@@ -47,7 +50,7 @@ module Spree
 
           def ensure_api_key_payload(store, api_key)
             {
-              data: { id: store.id, type: 'store' },
+              data: { id: store.id.to_s, type: 'store' },
               status: 'completed',
               meta: {
                 status: 'completed',
