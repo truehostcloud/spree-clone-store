@@ -3,6 +3,7 @@ Spree::Core::Engine.add_routes do
     namespace :v2 do
       namespace :platform do
         post '/clone-store', to: 'clone_stores#create'
+        post '/clone-store/ensure-api-key', to: 'clone_stores#ensure_api_key'
         get '/clone-store/:clone_request_id', to: 'clone_stores#show'
       end
     end

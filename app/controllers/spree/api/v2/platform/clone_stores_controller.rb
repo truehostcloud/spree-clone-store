@@ -24,7 +24,49 @@ module Spree
             render_clone_request_status(params[:clone_request_id])
           end
 
+          def ensure_api_key
+            store = resolve_ensure_api_key_store
+            return render_ensure_api_key_store_not_found if store.nil?
+
+            api_key = Spree::Olitt::CloneStore::StoreApiKeyProvisioner.call(store)
+            render json: ensure_api_key_payload(store, api_key), status: :ok
+          end
+
           private
+
+          def resolve_ensure_api_key_store
+            Spree.current_store_finder.new(url: params[:url].presence).execute
+          end
+
+          def render_ensure_api_key_store_not_found
+            render json: {
+              errors: ['Store not found for the provided url'],
+              meta: { status: 'not_found' }
+            }, status: :not_found
+          end
+
+          def ensure_api_key_payload(store, api_key)
+            {
+              data: { id: store.id, type: 'store' },
+              status: 'completed',
+              meta: {
+                status: 'completed',
+                public_api_key: serialize_public_api_key(api_key)
+              }
+            }
+          end
+
+          def serialize_public_api_key(api_key)
+            return nil if api_key.nil?
+
+            {
+              id: api_key.id,
+              name: api_key.name,
+              key_type: api_key.key_type,
+              token: api_key.token,
+              store_id: api_key.store_id
+            }
+          end
 
           def authorize_clone_store_request!
             if api_key_header_present?
