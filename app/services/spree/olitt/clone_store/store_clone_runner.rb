@@ -53,8 +53,6 @@ module Spree
             new_store: @new_store,
             vendor: @vendor
           )
-          run_section('taxonomies', taxonomies_duplicator) { taxonomies_duplicator.handle_clone_taxonomies }
-
           taxon_duplicator = Duplicators::TaxonsDuplicator.new(
             old_store: @old_store,
             new_store: @new_store,
@@ -62,7 +60,10 @@ module Spree
             taxonomies_cache: taxonomies_duplicator.taxonomies_cache,
             root_taxons: taxonomies_duplicator.root_taxons
           )
-          run_section('taxons', taxon_duplicator) { taxon_duplicator.handle_clone_taxons }
+          if clone_categories_enabled?
+            run_section('taxonomies', taxonomies_duplicator) { taxonomies_duplicator.handle_clone_taxonomies }
+            run_section('taxons', taxon_duplicator) { taxon_duplicator.handle_clone_taxons }
+          end
           linked_resource.taxons_cache = taxon_duplicator.taxons_cache
 
           page_duplicator = Duplicators::PagesDuplicator.new(
@@ -172,6 +173,10 @@ module Spree
           end
 
           @new_store.save!
+        end
+
+        def clone_categories_enabled?
+          ENV.fetch('CLONE_CATEGORIES_ENABLED', 'true') != 'false'
         end
 
         def run_section(section_name, duplicator = nil)
